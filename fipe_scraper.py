@@ -281,29 +281,36 @@ class FIPEScraper:
                         
                         # Get all years for this model
                         years = self._get_dropdown_options(config.ELEMENT_IDS['year'])
-                        
+
                         # Loop through each year
-                        for year in years:
+                        for year_idx, year in enumerate(years):
                             # Select this year
                             self._select_dropdown_option(
                                 config.ELEMENT_IDS['year'],
                                 year['value']
                             )
-                            
+
                             # Save year to database
                             db_year = self._save_model_year(db_model, year)
-                            
+
                             # Extract price data from the results
                             price_data = self._extract_price_data()
-                            
+
                             # Save price to database
                             if price_data:
                                 self._save_price(db_month, db_year, price_data)
-                    
+                                logger.info(f"✓ Completed: {model['text']} {year['text']} - R$ {price_data['price']:.2f}")
+
+                        # Log completion of all years for this model
+                        logger.success(f"✓ Completed all {len(years)} year(s) for model: {model['text']}")
+
                     # Save checkpoint after completing a brand
                     self.checkpoint[checkpoint_key] = True
                     self._save_checkpoint(self.checkpoint)
-            
+
+                # Log completion of the entire reference month
+                logger.success(f"✓✓ Completed all data for reference month: {month['text']}")
+
             logger.info("Scraping completed successfully!")
             
         except Exception as e:

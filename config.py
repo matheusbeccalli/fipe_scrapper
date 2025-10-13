@@ -59,7 +59,7 @@ LOG_CONFIG = {
 # Format: 'month_name/year' (e.g., 'janeiro/2020')
 DATE_RANGE = {
     'start_month': 'janeiro/2024',  # e.g., 'janeiro/2020' or None for all
-    'end_month': 'dezembro/2024',    # e.g., 'dezembro/2024' or None for all
+    'end_month': 'janeiro/2024',    # e.g., 'dezembro/2024' or None for all
 }
 
 # Resume scraping configuration
