@@ -24,7 +24,7 @@ ELEMENT_IDS = {
     'brand': 'selectMarcacarro',
     'model': 'selectAnoModelocarro',
     'year': 'selectAnocarro',
-    'search_button': 'buttonConsultarcarro',  # Submit button to get price
+    'search_button': 'buttonPesquisarcarro',  # Submit button to get price (it's a link styled as button)
 }
 
 # Selenium configuration

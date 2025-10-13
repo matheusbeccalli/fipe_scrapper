@@ -1,1 +1,376 @@
 [32m2025-10-13 19:44:35.763[0m | [1mINFO    [0m | [36m__main__[0m:[36m__init__[0m:[36m57[0m - [1mInitializing FIPE Scraper...[0m
+2025-10-13 19:44:37,489 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-10-13 19:44:37,489 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("reference_months")
+2025-10-13 19:44:37,489 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-10-13 19:44:37,489 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("brands")
+2025-10-13 19:44:37,489 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-10-13 19:44:37,490 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("car_models")
+2025-10-13 19:44:37,490 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-10-13 19:44:37,490 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("model_years")
+2025-10-13 19:44:37,490 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-10-13 19:44:37,490 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("car_prices")
+2025-10-13 19:44:37,490 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-10-13 19:44:37,490 INFO sqlalchemy.engine.Engine COMMIT
+[32m2025-10-13 19:44:37.490[0m | [1mINFO    [0m | [36m__main__[0m:[36m__init__[0m:[36m69[0m - [1mScraper initialized successfully![0m
+[32m2025-10-13 19:44:37.490[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m282[0m - [1mStarting data scraping...[0m
+[32m2025-10-13 19:44:37.490[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m286[0m - [1mLoading FIPE website: https://veiculos.fipe.org.br/[0m
+[32m2025-10-13 19:44:41.339[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m292[0m - [1mCurrent URL: https://veiculos.fipe.org.br/[0m
+[32m2025-10-13 19:44:41.342[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m293[0m - [1mPage title: Tabela Fipe - Fundação Instituto de Pesquisas Econômicas - Fipe[0m
+[32m2025-10-13 19:44:41.342[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m296[0m - [1mScrolling to consultation form...[0m
+[32m2025-10-13 19:44:43.346[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m302[0m - [1mLooking for car consultation accordion...[0m
+[32m2025-10-13 19:44:53.386[0m | [33m[1mWARNING [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m314[0m - [33m[1mCould not find car accordion, it might already be expanded[0m
+[32m2025-10-13 19:44:53.386[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m317[0m - [1mWaiting for select element: selectTabelaReferenciacarro[0m
+[32m2025-10-13 19:44:53.390[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m322[0m - [1mFound select element[0m
+[32m2025-10-13 19:44:57.393[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m146[0m - [34m[1mTrying to get options from native select: selectTabelaReferenciacarro[0m
+[32m2025-10-13 19:44:57.419[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m151[0m - [34m[1mFound 298 options in native select element[0m
+[32m2025-10-13 19:44:57.427[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 0: text='outubro/2025', value='326'[0m
+[32m2025-10-13 19:44:57.431[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 1: text='setembro/2025', value='325'[0m
+[32m2025-10-13 19:44:57.435[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 2: text='agosto/2025', value='324'[0m
+[32m2025-10-13 19:44:57.439[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 3: text='julho/2025', value='323'[0m
+[32m2025-10-13 19:44:57.443[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 4: text='junho/2025', value='322'[0m
+[32m2025-10-13 19:44:58.518[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m175[0m - [34m[1mSuccessfully extracted 298 options from native select[0m
+[32m2025-10-13 19:44:58.518[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m177[0m - [34m[1mFirst 3 options: [{'value': '0', 'text': 'outubro/2025'}, {'value': '1', 'text': 'setembro/2025'}, {'value': '2', 'text': 'agosto/2025'}][0m
+[32m2025-10-13 19:44:58.518[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m338[0m - [1mFound 298 reference months available[0m
+[32m2025-10-13 19:44:58.518[0m | [1mINFO    [0m | [36m__main__[0m:[36m_filter_months_by_date_range[0m:[36m644[0m - [1mFiltering months: 2024-01 to 2024-01[0m
+[32m2025-10-13 19:44:58.518[0m | [1mINFO    [0m | [36m__main__[0m:[36m_filter_months_by_date_range[0m:[36m654[0m - [1mFiltered to 1 month(s) out of 298 available[0m
+[32m2025-10-13 19:44:58.518[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m345[0m - [1mProcessing month 1/1: janeiro/2024[0m
+[32m2025-10-13 19:44:58.518[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 21 in select selectTabelaReferenciacarro[0m
+[32m2025-10-13 19:44:58.593[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 21 using JavaScript[0m
+2025-10-13 19:45:00,606 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-10-13 19:45:00,607 INFO sqlalchemy.engine.Engine SELECT reference_months.id AS reference_months_id, reference_months.month_code AS reference_months_month_code, reference_months.month_date AS reference_months_month_date, reference_months.created_at AS reference_months_created_at 
+FROM reference_months 
+WHERE reference_months.month_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:45:00,607 INFO sqlalchemy.engine.Engine [generated in 0.00010s] ('21', 1, 0)
+[32m2025-10-13 19:45:00.607[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m146[0m - [34m[1mTrying to get options from native select: selectMarcacarro[0m
+[32m2025-10-13 19:45:00.616[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m151[0m - [34m[1mFound 98 options in native select element[0m
+[32m2025-10-13 19:45:00.628[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 0: text='', value=''[0m
+[32m2025-10-13 19:45:00.635[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 1: text='Acura', value='1'[0m
+[32m2025-10-13 19:45:00.642[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 2: text='Agrale', value='2'[0m
+[32m2025-10-13 19:45:00.649[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 3: text='Alfa Romeo', value='3'[0m
+[32m2025-10-13 19:45:00.657[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 4: text='AM Gen', value='4'[0m
+[32m2025-10-13 19:45:01.296[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m175[0m - [34m[1mSuccessfully extracted 97 options from native select[0m
+[32m2025-10-13 19:45:01.296[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m177[0m - [34m[1mFirst 3 options: [{'value': '1', 'text': 'Acura'}, {'value': '2', 'text': 'Agrale'}, {'value': '3', 'text': 'Alfa Romeo'}][0m
+[32m2025-10-13 19:45:01.296[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m358[0m - [1mFound 97 brands[0m
+[32m2025-10-13 19:45:01.296[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 1/97: Acura[0m
+[32m2025-10-13 19:45:01.297[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 1 in select selectMarcacarro[0m
+[32m2025-10-13 19:45:01.408[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 1 using JavaScript[0m
+2025-10-13 19:45:03,410 INFO sqlalchemy.engine.Engine SELECT brands.id AS brands_id, brands.brand_code AS brands_brand_code, brands.brand_name AS brands_brand_name, brands.created_at AS brands_created_at 
+FROM brands 
+WHERE brands.brand_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:45:03,410 INFO sqlalchemy.engine.Engine [generated in 0.00011s] ('1', 1, 0)
+[32m2025-10-13 19:45:03.411[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m146[0m - [34m[1mTrying to get options from native select: selectAnoModelocarro[0m
+[32m2025-10-13 19:45:03.418[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m151[0m - [34m[1mFound 4 options in native select element[0m
+[32m2025-10-13 19:45:03.427[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 0: text='', value=''[0m
+[32m2025-10-13 19:45:03.432[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 1: text='Integra GS 1.8', value='1'[0m
+[32m2025-10-13 19:45:03.438[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 2: text='Legend 3.2/3.5', value='2'[0m
+[32m2025-10-13 19:45:03.443[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 3: text='NSX 3.0', value='3'[0m
+[32m2025-10-13 19:45:03.443[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m175[0m - [34m[1mSuccessfully extracted 3 options from native select[0m
+[32m2025-10-13 19:45:03.443[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m177[0m - [34m[1mFirst 3 options: [{'value': '1', 'text': 'Integra GS 1.8'}, {'value': '2', 'text': 'Legend 3.2/3.5'}, {'value': '3', 'text': 'NSX 3.0'}][0m
+[32m2025-10-13 19:45:03.443[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m381[0m - [1mFound 3 models[0m
+[32m2025-10-13 19:45:03.443[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 1 in select selectAnoModelocarro[0m
+[32m2025-10-13 19:45:03.569[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 1 using JavaScript[0m
+2025-10-13 19:45:05,573 INFO sqlalchemy.engine.Engine SELECT car_models.id AS car_models_id, car_models.brand_id AS car_models_brand_id, car_models.model_code AS car_models_model_code, car_models.model_name AS car_models_model_name, car_models.created_at AS car_models_created_at 
+FROM car_models 
+WHERE car_models.brand_id = ? AND car_models.model_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:45:05,573 INFO sqlalchemy.engine.Engine [generated in 0.00036s] (1, '1', 1, 0)
+[32m2025-10-13 19:45:05.574[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m146[0m - [34m[1mTrying to get options from native select: selectAnocarro[0m
+[32m2025-10-13 19:45:05.586[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m151[0m - [34m[1mFound 3 options in native select element[0m
+[32m2025-10-13 19:45:05.594[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 0: text='', value=''[0m
+[32m2025-10-13 19:45:05.599[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 1: text='1992 Gasolina', value='1992-1'[0m
+[32m2025-10-13 19:45:05.604[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 2: text='1991 Gasolina', value='1991-1'[0m
+[32m2025-10-13 19:45:05.604[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m175[0m - [34m[1mSuccessfully extracted 2 options from native select[0m
+[32m2025-10-13 19:45:05.604[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m177[0m - [34m[1mFirst 3 options: [{'value': '1', 'text': '1992 Gasolina'}, {'value': '2', 'text': '1991 Gasolina'}][0m
+[32m2025-10-13 19:45:05.604[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 1 in select selectAnocarro[0m
+[32m2025-10-13 19:45:05.705[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 1 using JavaScript[0m
+2025-10-13 19:45:07,710 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:45:07,710 INFO sqlalchemy.engine.Engine [generated in 0.00053s] (1, '1', 1, 0)
+[32m2025-10-13 19:45:07.711[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:45:28.284[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:45:28.325[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 2 in select selectAnocarro[0m
+[32m2025-10-13 19:45:28.476[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 2 using JavaScript[0m
+2025-10-13 19:45:30,477 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:45:30,477 INFO sqlalchemy.engine.Engine [cached since 22.77s ago] (1, '2', 1, 0)
+[32m2025-10-13 19:45:30.478[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:45:51.091[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:45:51.142[0m | [32m[1mSUCCESS [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m423[0m - [32m[1m\u2713 Completed all 2 year(s) for model: Integra GS 1.8[0m
+[32m2025-10-13 19:45:51.142[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 2 in select selectAnoModelocarro[0m
+[32m2025-10-13 19:45:53.636[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 2 using JavaScript[0m
+2025-10-13 19:45:55,638 INFO sqlalchemy.engine.Engine SELECT car_models.id AS car_models_id, car_models.brand_id AS car_models_brand_id, car_models.model_code AS car_models_model_code, car_models.model_name AS car_models_model_name, car_models.created_at AS car_models_created_at 
+FROM car_models 
+WHERE car_models.brand_id = ? AND car_models.model_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:45:55,638 INFO sqlalchemy.engine.Engine [cached since 50.07s ago] (1, '2', 1, 0)
+[32m2025-10-13 19:45:55.639[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m146[0m - [34m[1mTrying to get options from native select: selectAnocarro[0m
+[32m2025-10-13 19:45:55.656[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m151[0m - [34m[1mFound 9 options in native select element[0m
+[32m2025-10-13 19:45:55.667[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 0: text='', value=''[0m
+[32m2025-10-13 19:45:55.672[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 1: text='1998 Gasolina', value='1998-1'[0m
+[32m2025-10-13 19:45:55.678[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 2: text='1997 Gasolina', value='1997-1'[0m
+[32m2025-10-13 19:45:55.683[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 3: text='1996 Gasolina', value='1996-1'[0m
+[32m2025-10-13 19:45:55.688[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 4: text='1995 Gasolina', value='1995-1'[0m
+[32m2025-10-13 19:45:55.712[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m175[0m - [34m[1mSuccessfully extracted 8 options from native select[0m
+[32m2025-10-13 19:45:55.712[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m177[0m - [34m[1mFirst 3 options: [{'value': '1', 'text': '1998 Gasolina'}, {'value': '2', 'text': '1997 Gasolina'}, {'value': '3', 'text': '1996 Gasolina'}][0m
+[32m2025-10-13 19:45:55.712[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 1 in select selectAnocarro[0m
+[32m2025-10-13 19:45:56.432[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 1 using JavaScript[0m
+2025-10-13 19:45:58,433 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:45:58,433 INFO sqlalchemy.engine.Engine [cached since 50.72s ago] (2, '1', 1, 0)
+[32m2025-10-13 19:45:58.433[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:46:18.984[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:46:19.028[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 2 in select selectAnocarro[0m
+[32m2025-10-13 19:46:24.205[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 2 using JavaScript[0m
+2025-10-13 19:46:26,206 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:46:26,207 INFO sqlalchemy.engine.Engine [cached since 78.5s ago] (2, '2', 1, 0)
+[32m2025-10-13 19:46:26.208[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:46:46.794[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:46:46.833[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 3 in select selectAnocarro[0m
+[32m2025-10-13 19:46:49.624[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 3 using JavaScript[0m
+2025-10-13 19:46:51,625 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:46:51,625 INFO sqlalchemy.engine.Engine [cached since 103.9s ago] (2, '3', 1, 0)
+[32m2025-10-13 19:46:51.626[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:47:12.185[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:47:12.225[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 4 in select selectAnocarro[0m
+[32m2025-10-13 19:47:13.043[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 4 using JavaScript[0m
+2025-10-13 19:47:15,044 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:47:15,044 INFO sqlalchemy.engine.Engine [cached since 127.3s ago] (2, '4', 1, 0)
+[32m2025-10-13 19:47:15.045[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:47:35.628[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:47:35.663[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 5 in select selectAnocarro[0m
+[32m2025-10-13 19:47:35.749[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 5 using JavaScript[0m
+2025-10-13 19:47:37,750 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:47:37,751 INFO sqlalchemy.engine.Engine [cached since 150s ago] (2, '5', 1, 0)
+[32m2025-10-13 19:47:37.751[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:47:58.308[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:47:58.348[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 6 in select selectAnocarro[0m
+[32m2025-10-13 19:48:00.545[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 6 using JavaScript[0m
+2025-10-13 19:48:02,546 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:48:02,546 INFO sqlalchemy.engine.Engine [cached since 174.8s ago] (2, '6', 1, 0)
+[32m2025-10-13 19:48:02.546[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:48:23.123[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:48:23.169[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 7 in select selectAnocarro[0m
+[32m2025-10-13 19:48:23.942[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 7 using JavaScript[0m
+2025-10-13 19:48:25,943 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:48:25,943 INFO sqlalchemy.engine.Engine [cached since 198.2s ago] (2, '7', 1, 0)
+[32m2025-10-13 19:48:25.944[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:48:46.537[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:48:46.571[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 8 in select selectAnocarro[0m
+[32m2025-10-13 19:48:46.654[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 8 using JavaScript[0m
+2025-10-13 19:48:48,655 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:48:48,655 INFO sqlalchemy.engine.Engine [cached since 220.9s ago] (2, '8', 1, 0)
+[32m2025-10-13 19:48:48.655[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:49:09.255[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:49:09.290[0m | [32m[1mSUCCESS [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m423[0m - [32m[1m\u2713 Completed all 8 year(s) for model: Legend 3.2/3.5[0m
+[32m2025-10-13 19:49:09.291[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 3 in select selectAnoModelocarro[0m
+[32m2025-10-13 19:49:09.382[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 3 using JavaScript[0m
+2025-10-13 19:49:11,383 INFO sqlalchemy.engine.Engine SELECT car_models.id AS car_models_id, car_models.brand_id AS car_models_brand_id, car_models.model_code AS car_models_model_code, car_models.model_name AS car_models_model_name, car_models.created_at AS car_models_created_at 
+FROM car_models 
+WHERE car_models.brand_id = ? AND car_models.model_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:49:11,383 INFO sqlalchemy.engine.Engine [cached since 245.8s ago] (1, '3', 1, 0)
+[32m2025-10-13 19:49:11.384[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m146[0m - [34m[1mTrying to get options from native select: selectAnocarro[0m
+[32m2025-10-13 19:49:11.397[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m151[0m - [34m[1mFound 6 options in native select element[0m
+[32m2025-10-13 19:49:11.409[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 0: text='', value=''[0m
+[32m2025-10-13 19:49:11.414[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 1: text='1995 Gasolina', value='1995-1'[0m
+[32m2025-10-13 19:49:11.420[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 2: text='1994 Gasolina', value='1994-1'[0m
+[32m2025-10-13 19:49:11.425[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 3: text='1993 Gasolina', value='1993-1'[0m
+[32m2025-10-13 19:49:11.434[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 4: text='1992 Gasolina', value='1992-1'[0m
+[32m2025-10-13 19:49:11.439[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m175[0m - [34m[1mSuccessfully extracted 5 options from native select[0m
+[32m2025-10-13 19:49:11.439[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m177[0m - [34m[1mFirst 3 options: [{'value': '1', 'text': '1995 Gasolina'}, {'value': '2', 'text': '1994 Gasolina'}, {'value': '3', 'text': '1993 Gasolina'}][0m
+[32m2025-10-13 19:49:11.439[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 1 in select selectAnocarro[0m
+[32m2025-10-13 19:49:11.528[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 1 using JavaScript[0m
+2025-10-13 19:49:13,529 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:49:13,529 INFO sqlalchemy.engine.Engine [cached since 245.8s ago] (3, '1', 1, 0)
+[32m2025-10-13 19:49:13.529[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:49:34.130[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:49:34.179[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 2 in select selectAnocarro[0m
+[32m2025-10-13 19:49:34.687[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 2 using JavaScript[0m
+2025-10-13 19:49:36,689 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:49:36,690 INFO sqlalchemy.engine.Engine [cached since 269s ago] (3, '2', 1, 0)
+[32m2025-10-13 19:49:36.691[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:49:57.212[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:49:57.259[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 3 in select selectAnocarro[0m
+[32m2025-10-13 19:49:57.908[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 3 using JavaScript[0m
+2025-10-13 19:49:59,909 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:49:59,910 INFO sqlalchemy.engine.Engine [cached since 292.2s ago] (3, '3', 1, 0)
+[32m2025-10-13 19:49:59.910[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:50:20.505[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:50:20.550[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 4 in select selectAnocarro[0m
+[32m2025-10-13 19:50:21.444[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 4 using JavaScript[0m
+2025-10-13 19:50:23,445 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:50:23,445 INFO sqlalchemy.engine.Engine [cached since 315.7s ago] (3, '4', 1, 0)
+[32m2025-10-13 19:50:23.446[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:50:44.015[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:50:44.057[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 5 in select selectAnocarro[0m
+[32m2025-10-13 19:50:44.156[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 5 using JavaScript[0m
+2025-10-13 19:50:46,158 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:50:46,158 INFO sqlalchemy.engine.Engine [cached since 338.4s ago] (3, '5', 1, 0)
+[32m2025-10-13 19:50:46.159[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:51:06.765[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:51:06.801[0m | [32m[1mSUCCESS [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m423[0m - [32m[1m\u2713 Completed all 5 year(s) for model: NSX 3.0[0m
+[32m2025-10-13 19:51:06.801[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 2/97: Agrale[0m
+[32m2025-10-13 19:51:06.801[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 2 in select selectMarcacarro[0m
+[32m2025-10-13 19:51:07.224[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 2 using JavaScript[0m
+2025-10-13 19:51:09,226 INFO sqlalchemy.engine.Engine SELECT brands.id AS brands_id, brands.brand_code AS brands_brand_code, brands.brand_name AS brands_brand_name, brands.created_at AS brands_created_at 
+FROM brands 
+WHERE brands.brand_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:51:09,226 INFO sqlalchemy.engine.Engine [cached since 365.8s ago] ('2', 1, 0)
+[32m2025-10-13 19:51:09.228[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m146[0m - [34m[1mTrying to get options from native select: selectAnoModelocarro[0m
+[32m2025-10-13 19:51:09.244[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m151[0m - [34m[1mFound 17 options in native select element[0m
+[32m2025-10-13 19:51:09.253[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 0: text='', value=''[0m
+[32m2025-10-13 19:51:09.258[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 1: text='MARRUÁ 2.8 12V 132cv TDI Diesel', value='4'[0m
+[32m2025-10-13 19:51:09.263[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 2: text='MARRUÁ AM 100 2.8  CS TDI Diesel', value='4564'[0m
+[32m2025-10-13 19:51:09.268[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 3: text='MARRUÁ AM 100 2.8 CD TDI Diesel', value='4563'[0m
+[32m2025-10-13 19:51:09.273[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 4: text='MARRUÁ AM 150 2.8  CS TDI Diesel', value='4566'[0m
+[32m2025-10-13 19:51:09.336[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m175[0m - [34m[1mSuccessfully extracted 16 options from native select[0m
+[32m2025-10-13 19:51:09.336[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m177[0m - [34m[1mFirst 3 options: [{'value': '1', 'text': 'MARRUÁ 2.8 12V 132cv TDI Diesel'}, {'value': '2', 'text': 'MARRUÁ AM 100 2.8  CS TDI Diesel'}, {'value': '3', 'text': 'MARRUÁ AM 100 2.8 CD TDI Diesel'}][0m
+[32m2025-10-13 19:51:09.336[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m381[0m - [1mFound 16 models[0m
+[32m2025-10-13 19:51:09.337[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 1 in select selectAnoModelocarro[0m
+[32m2025-10-13 19:51:09.418[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 1 using JavaScript[0m
+2025-10-13 19:51:11,420 INFO sqlalchemy.engine.Engine SELECT car_models.id AS car_models_id, car_models.brand_id AS car_models_brand_id, car_models.model_code AS car_models_model_code, car_models.model_name AS car_models_model_name, car_models.created_at AS car_models_created_at 
+FROM car_models 
+WHERE car_models.brand_id = ? AND car_models.model_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:51:11,420 INFO sqlalchemy.engine.Engine [cached since 365.8s ago] (2, '1', 1, 0)
+[32m2025-10-13 19:51:11.421[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m146[0m - [34m[1mTrying to get options from native select: selectAnocarro[0m
+[32m2025-10-13 19:51:11.438[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m151[0m - [34m[1mFound 5 options in native select element[0m
+[32m2025-10-13 19:51:11.451[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 0: text='', value=''[0m
+[32m2025-10-13 19:51:11.457[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 1: text='2007 Diesel', value='2007-3'[0m
+[32m2025-10-13 19:51:11.462[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 2: text='2006 Diesel', value='2006-3'[0m
+[32m2025-10-13 19:51:11.470[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 3: text='2005 Diesel', value='2005-3'[0m
+[32m2025-10-13 19:51:11.475[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 4: text='2004 Diesel', value='2004-3'[0m
+[32m2025-10-13 19:51:11.475[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m175[0m - [34m[1mSuccessfully extracted 4 options from native select[0m
+[32m2025-10-13 19:51:11.475[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m177[0m - [34m[1mFirst 3 options: [{'value': '1', 'text': '2007 Diesel'}, {'value': '2', 'text': '2006 Diesel'}, {'value': '3', 'text': '2005 Diesel'}][0m
+[32m2025-10-13 19:51:11.475[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 1 in select selectAnocarro[0m
+[32m2025-10-13 19:51:11.562[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 1 using JavaScript[0m
+2025-10-13 19:51:13,564 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:51:13,565 INFO sqlalchemy.engine.Engine [cached since 365.9s ago] (4, '1', 1, 0)
+[32m2025-10-13 19:51:13.566[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:51:34.166[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:51:34.218[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 2 in select selectAnocarro[0m
+[32m2025-10-13 19:51:35.326[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 2 using JavaScript[0m
+2025-10-13 19:51:37,328 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:51:37,328 INFO sqlalchemy.engine.Engine [cached since 389.6s ago] (4, '2', 1, 0)
+[32m2025-10-13 19:51:37.329[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:51:57.895[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:51:57.943[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 3 in select selectAnocarro[0m
+[32m2025-10-13 19:51:58.632[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 3 using JavaScript[0m
+2025-10-13 19:52:00,633 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:52:00,634 INFO sqlalchemy.engine.Engine [cached since 412.9s ago] (4, '3', 1, 0)
+[32m2025-10-13 19:52:00.635[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:52:21.165[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:52:21.202[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 4 in select selectAnocarro[0m
+[32m2025-10-13 19:52:22.496[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 4 using JavaScript[0m
+2025-10-13 19:52:24,498 INFO sqlalchemy.engine.Engine SELECT model_years.id AS model_years_id, model_years.car_model_id AS model_years_car_model_id, model_years.year_code AS model_years_year_code, model_years.year_description AS model_years_year_description, model_years.created_at AS model_years_created_at 
+FROM model_years 
+WHERE model_years.car_model_id = ? AND model_years.year_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:52:24,498 INFO sqlalchemy.engine.Engine [cached since 436.8s ago] (4, '4', 1, 0)
+[32m2025-10-13 19:52:24.499[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m459[0m - [34m[1mWaiting for results table to appear...[0m
+[32m2025-10-13 19:52:45.072[0m | [31m[1mERROR   [0m | [36m__main__[0m:[36m_extract_price_data[0m:[36m468[0m - [31m[1mTimeout waiting for results table[0m
+[32m2025-10-13 19:52:45.106[0m | [32m[1mSUCCESS [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m423[0m - [32m[1m\u2713 Completed all 4 year(s) for model: MARRUÁ 2.8 12V 132cv TDI Diesel[0m
+[32m2025-10-13 19:52:45.106[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 2 in select selectAnoModelocarro[0m
+[32m2025-10-13 19:52:45.173[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 2 using JavaScript[0m
+2025-10-13 19:52:47,175 INFO sqlalchemy.engine.Engine SELECT car_models.id AS car_models_id, car_models.brand_id AS car_models_brand_id, car_models.model_code AS car_models_model_code, car_models.model_name AS car_models_model_name, car_models.created_at AS car_models_created_at 
+FROM car_models 
+WHERE car_models.brand_id = ? AND car_models.model_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:52:47,175 INFO sqlalchemy.engine.Engine [cached since 461.6s ago] (2, '2', 1, 0)
+[32m2025-10-13 19:52:47.176[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m146[0m - [34m[1mTrying to get options from native select: selectAnocarro[0m
+[32m2025-10-13 19:52:47.191[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m151[0m - [34m[1mFound 1 options in native select element[0m
+[32m2025-10-13 19:52:47.201[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 0: text='', value=''[0m
+[32m2025-10-13 19:52:47.201[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m175[0m - [34m[1mSuccessfully extracted 0 options from native select[0m
+[32m2025-10-13 19:52:47.201[0m | [32m[1mSUCCESS [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m423[0m - [32m[1m\u2713 Completed all 0 year(s) for model: MARRUÁ AM 100 2.8  CS TDI Diesel[0m
+[32m2025-10-13 19:52:47.201[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 3 in select selectAnoModelocarro[0m
+[32m2025-10-13 19:52:49.660[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 3 using JavaScript[0m
+2025-10-13 19:52:51,660 INFO sqlalchemy.engine.Engine SELECT car_models.id AS car_models_id, car_models.brand_id AS car_models_brand_id, car_models.model_code AS car_models_model_code, car_models.model_name AS car_models_model_name, car_models.created_at AS car_models_created_at 
+FROM car_models 
+WHERE car_models.brand_id = ? AND car_models.model_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:52:51,661 INFO sqlalchemy.engine.Engine [cached since 466.1s ago] (2, '3', 1, 0)
+[32m2025-10-13 19:52:51.661[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m146[0m - [34m[1mTrying to get options from native select: selectAnocarro[0m
+[32m2025-10-13 19:52:51.666[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m151[0m - [34m[1mFound 1 options in native select element[0m
+[32m2025-10-13 19:52:51.674[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 0: text='', value=''[0m
+[32m2025-10-13 19:52:51.674[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m175[0m - [34m[1mSuccessfully extracted 0 options from native select[0m
+[32m2025-10-13 19:52:51.674[0m | [32m[1mSUCCESS [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m423[0m - [32m[1m\u2713 Completed all 0 year(s) for model: MARRUÁ AM 100 2.8 CD TDI Diesel[0m
+[32m2025-10-13 19:52:51.674[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 4 in select selectAnoModelocarro[0m
+[32m2025-10-13 19:52:55.019[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 4 using JavaScript[0m
+2025-10-13 19:52:57,020 INFO sqlalchemy.engine.Engine SELECT car_models.id AS car_models_id, car_models.brand_id AS car_models_brand_id, car_models.model_code AS car_models_model_code, car_models.model_name AS car_models_model_name, car_models.created_at AS car_models_created_at 
+FROM car_models 
+WHERE car_models.brand_id = ? AND car_models.model_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:52:57,021 INFO sqlalchemy.engine.Engine [cached since 471.4s ago] (2, '4', 1, 0)
+[32m2025-10-13 19:52:57.022[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m146[0m - [34m[1mTrying to get options from native select: selectAnocarro[0m
+[32m2025-10-13 19:52:57.031[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m151[0m - [34m[1mFound 1 options in native select element[0m
+[32m2025-10-13 19:52:57.040[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 0: text='', value=''[0m
+[32m2025-10-13 19:52:57.040[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m175[0m - [34m[1mSuccessfully extracted 0 options from native select[0m
+[32m2025-10-13 19:52:57.040[0m | [32m[1mSUCCESS [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m423[0m - [32m[1m\u2713 Completed all 0 year(s) for model: MARRUÁ AM 150 2.8  CS TDI Diesel[0m
+[32m2025-10-13 19:52:57.040[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 5 in select selectAnoModelocarro[0m
+[32m2025-10-13 19:52:57.460[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 5 using JavaScript[0m
+2025-10-13 19:52:59,461 INFO sqlalchemy.engine.Engine SELECT car_models.id AS car_models_id, car_models.brand_id AS car_models_brand_id, car_models.model_code AS car_models_model_code, car_models.model_name AS car_models_model_name, car_models.created_at AS car_models_created_at 
+FROM car_models 
+WHERE car_models.brand_id = ? AND car_models.model_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:52:59,461 INFO sqlalchemy.engine.Engine [cached since 473.9s ago] (2, '5', 1, 0)
+[32m2025-10-13 19:52:59.461[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m146[0m - [34m[1mTrying to get options from native select: selectAnocarro[0m
+[32m2025-10-13 19:52:59.466[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m151[0m - [34m[1mFound 1 options in native select element[0m
+[32m2025-10-13 19:52:59.474[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 0: text='', value=''[0m
+[32m2025-10-13 19:52:59.474[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m175[0m - [34m[1mSuccessfully extracted 0 options from native select[0m
+[32m2025-10-13 19:52:59.475[0m | [32m[1mSUCCESS [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m423[0m - [32m[1m\u2713 Completed all 0 year(s) for model: MARRUÁ AM 150 2.8 CD TDI Diesel[0m
+[32m2025-10-13 19:52:59.475[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 6 in select selectAnoModelocarro[0m
+[32m2025-10-13 19:52:59.535[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 6 using JavaScript[0m

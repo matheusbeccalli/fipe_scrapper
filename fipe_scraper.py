@@ -408,16 +408,19 @@ class FIPEScraper:
                                 year['value']
                             )
 
-                            # Click the "Pesquisar" (Search) button to submit the form
+                            # Click the "Pesquisar" (Search) button to submit and get price
                             try:
-                                search_button = WebDriverWait(self.driver, 10).until(
-                                    EC.element_to_be_clickable((By.ID, config.ELEMENT_IDS['search_button']))
+                                search_button = WebDriverWait(self.driver, 5).until(
+                                    EC.presence_of_element_located((By.ID, config.ELEMENT_IDS['search_button']))
                                 )
-                                search_button.click()
-                                logger.debug("Clicked search button (Pesquisar)")
-                                time.sleep(1)  # Wait for AJAX to load results
+                                # Use JavaScript click as it's more reliable for links styled as buttons
+                                self.driver.execute_script("arguments[0].click();", search_button)
+                                logger.debug("Clicked Pesquisar button using JavaScript")
+                                time.sleep(2)  # Wait for AJAX to load results
                             except Exception as e:
-                                logger.warning(f"Could not click search button: {e}")
+                                logger.error(f"Could not click Pesquisar button: {e}")
+                                self.driver.save_screenshot("error_button_click.png")
+                                # Continue anyway to attempt price extraction
 
                             # Save year to database
                             db_year = self._save_model_year(db_model, year)
@@ -470,13 +473,13 @@ class FIPEScraper:
             logger.debug("Waiting for results table to appear...")
 
             try:
-                # Wait up to 20 seconds for the table to appear
-                results_table = WebDriverWait(self.driver, 20).until(
+                # Wait up to 10 seconds for the table to appear
+                results_table = WebDriverWait(self.driver, 10).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, "#resultadoConsultacarroFiltros table"))
                 )
                 logger.debug("Results table found!")
             except TimeoutException:
-                logger.error("Timeout waiting for results table")
+                logger.error("Timeout waiting for results table after selecting year")
                 self.driver.save_screenshot("error_no_results_table.png")
                 return None
 
