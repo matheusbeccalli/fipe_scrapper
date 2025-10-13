@@ -130,48 +130,60 @@ class FIPEScraper:
     def _get_dropdown_options(self, select_id: str) -> List[Dict[str, str]]:
         """
         Get all options from a dropdown menu (Chosen jQuery plugin).
-        
+
         The FIPE website uses the Chosen plugin which creates a custom dropdown.
         We need to click the dropdown, then extract all the options.
-        
+
         Args:
             select_id: The base ID of the select element
-            
+
         Returns:
             List of dictionaries with 'value' and 'text' keys
         """
         options = []
-        
+
         try:
             # Click the dropdown to open it
             chosen_id = f"{select_id}_chosen"
+            logger.debug(f"Trying to open dropdown: {chosen_id}")
             self._wait_and_click(chosen_id)
-            
+
             # Wait for options to load
             time.sleep(1)
-            
+
             # Find all option elements in the dropdown
             # The Chosen plugin creates li elements for each option
             results_id = f"{chosen_id} .chosen-results li"
             option_elements = self.driver.find_elements(By.CSS_SELECTOR, results_id)
-            
+
+            logger.debug(f"Found {len(option_elements)} option elements in {select_id}")
+
             for option in option_elements:
                 # Get the data-option-array-index attribute (the value)
                 option_index = option.get_attribute('data-option-array-index')
                 option_text = option.text
-                
+
                 if option_text and option_index:
                     options.append({
                         'value': option_index,
                         'text': option_text
                     })
-            
+
             # Close the dropdown by clicking somewhere else
             self.driver.find_element(By.TAG_NAME, 'body').click()
-            
+
+            logger.debug(f"Successfully extracted {len(options)} options from {select_id}")
+
         except Exception as e:
             logger.error(f"Error getting dropdown options for {select_id}: {e}")
-        
+            # Try to take a screenshot for debugging
+            try:
+                screenshot_path = f"error_screenshot_{select_id}.png"
+                self.driver.save_screenshot(screenshot_path)
+                logger.info(f"Screenshot saved to {screenshot_path}")
+            except:
+                pass
+
         return options
     
     def _select_dropdown_option(self, select_id: str, option_value: str):
@@ -217,13 +229,18 @@ class FIPEScraper:
             time.sleep(3)  # Wait for page to fully load
             
             # Click on "Consulta de Carros e Utilitários Pequenos"
-            car_button = self.driver.find_element(
-                By.CSS_SELECTOR, 
-                f"a[data-slug='{config.ELEMENT_IDS['vehicle_type']}']"
+            car_button = WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, f"a[data-slug='{config.ELEMENT_IDS['vehicle_type']}']"))
             )
             car_button.click()
-            time.sleep(2)
-            
+
+            # Wait for the dropdown to be present before trying to interact with it
+            logger.info("Waiting for reference month dropdown to load...")
+            WebDriverWait(self.driver, 15).until(
+                EC.presence_of_element_located((By.ID, f"{config.ELEMENT_IDS['reference_month']}_chosen"))
+            )
+            time.sleep(2)  # Additional time for JavaScript to fully initialize
+
             # Get all reference months
             all_months = self._get_dropdown_options(config.ELEMENT_IDS['reference_month'])
             logger.info(f"Found {len(all_months)} reference months available")
