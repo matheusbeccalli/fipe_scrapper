@@ -122,7 +122,16 @@ Configuration can be customized using environment variables (recommended for sen
 - Create a `.env` file from `.env.example`: `cp .env.example .env`
 - Configure database: `DATABASE_URL=postgresql://user:pass@localhost/fipe_db`
 - Configure logging: `LOG_LEVEL=DEBUG`, `LOG_FILE=custom.log`
+- Configure date range: `SCRAPE_START_DATE=2024-01`, `SCRAPE_END_DATE=2024-12`
 - The `.env` file is ignored by git and will never be committed
+
+### Date Range Filtering
+By default, the scraper processes ALL available months (250+ months from 2001-present). To limit scraping to specific months:
+- Set `SCRAPE_START_DATE` and `SCRAPE_END_DATE` in `.env` or `config.py`
+- Format: `YYYY-MM` (e.g., `2024-01` for January 2024)
+- Both dates are inclusive
+- Useful for testing (scrape one month) or incremental updates (scrape recent months only)
+- Set to `None` or comment out to scrape all available months
 
 ## Common Issues
 

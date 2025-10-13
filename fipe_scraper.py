@@ -225,9 +225,12 @@ class FIPEScraper:
             time.sleep(2)
             
             # Get all reference months
-            months = self._get_dropdown_options(config.ELEMENT_IDS['reference_month'])
-            logger.info(f"Found {len(months)} reference months")
-            
+            all_months = self._get_dropdown_options(config.ELEMENT_IDS['reference_month'])
+            logger.info(f"Found {len(all_months)} reference months available")
+
+            # Filter months by date range if configured
+            months = self._filter_months_by_date_range(all_months)
+
             # Loop through each month
             for month_idx, month in enumerate(months):
                 logger.info(f"Processing month {month_idx + 1}/{len(months)}: {month['text']}")
@@ -269,16 +272,22 @@ class FIPEScraper:
                     logger.info(f"Found {len(models)} models")
                     
                     # Loop through each model
-                    for model in models:
+                    for model_idx, model in enumerate(models):
+                        # Check if this specific model was already scraped
+                        model_checkpoint_key = f"{month['value']}_{brand['value']}_{model['value']}"
+                        if model_checkpoint_key in self.checkpoint:
+                            logger.debug(f"Skipping already scraped model: {model['text']}")
+                            continue
+
                         # Select this model
                         self._select_dropdown_option(
                             config.ELEMENT_IDS['model'],
                             model['value']
                         )
-                        
+
                         # Save model to database
                         db_model = self._save_car_model(db_brand, model)
-                        
+
                         # Get all years for this model
                         years = self._get_dropdown_options(config.ELEMENT_IDS['year'])
 
@@ -304,8 +313,13 @@ class FIPEScraper:
                         # Log completion of all years for this model
                         logger.success(f"✓ Completed all {len(years)} year(s) for model: {model['text']}")
 
-                    # Save checkpoint after completing a brand
-                    self.checkpoint[checkpoint_key] = True
+                        # Save checkpoint after completing each model
+                        self.checkpoint[model_checkpoint_key] = True
+                        self._save_checkpoint(self.checkpoint)
+
+                    # Mark brand as complete (for backward compatibility)
+                    brand_checkpoint_key = f"{month['value']}_{brand['value']}"
+                    self.checkpoint[brand_checkpoint_key] = True
                     self._save_checkpoint(self.checkpoint)
 
                 # Log completion of the entire reference month
@@ -422,6 +436,46 @@ class FIPEScraper:
 
         # Return datetime object (first day of the month)
         return datetime(year, month_number, 1)
+
+    def _filter_months_by_date_range(self, months: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """
+        Filter months list based on DATE_RANGE configuration.
+
+        Args:
+            months: List of month dictionaries from the website
+
+        Returns:
+            Filtered list of months within the configured date range
+        """
+        start_date_str = config.DATE_RANGE.get('start_date')
+        end_date_str = config.DATE_RANGE.get('end_date')
+
+        # If no date range specified, return all months
+        if not start_date_str or not end_date_str:
+            logger.info("No date range specified, scraping all available months")
+            return months
+
+        try:
+            # Parse date range strings (format: YYYY-MM)
+            start_date = datetime.strptime(start_date_str, '%Y-%m').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m').date()
+
+            logger.info(f"Filtering months: {start_date_str} to {end_date_str}")
+
+            filtered_months = []
+            for month in months:
+                month_date = self._parse_month_string(month['text']).date()
+
+                # Check if month is within range (inclusive)
+                if start_date <= month_date <= end_date:
+                    filtered_months.append(month)
+
+            logger.info(f"Filtered to {len(filtered_months)} month(s) out of {len(months)} available")
+            return filtered_months
+
+        except ValueError as e:
+            logger.error(f"Invalid date range format: {e}. Expected YYYY-MM format. Scraping all months.")
+            return months
     
     # Database saving methods
     

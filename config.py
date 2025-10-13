@@ -55,11 +55,11 @@ LOG_CONFIG = {
 }
 
 # Date range configuration (optional)
-# Leave None to scrape all available months
-# Format: 'month_name/year' (e.g., 'janeiro/2020')
+# Set to None to scrape all available months, or specify date range in YYYY-MM format
+# Examples: '2024-01' for January 2024, '2020-12' for December 2020
 DATE_RANGE = {
-    'start_month': 'janeiro/2024',  # e.g., 'janeiro/2020' or None for all
-    'end_month': 'janeiro/2024',    # e.g., 'dezembro/2024' or None for all
+    'start_date': os.getenv('SCRAPE_START_DATE', '2024-01'),  # Format: 'YYYY-MM' or None for all
+    'end_date': os.getenv('SCRAPE_END_DATE', '2024-01'),      # Format: 'YYYY-MM' or None for all
 }
 
 # Resume scraping configuration
