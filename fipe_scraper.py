@@ -20,7 +20,7 @@ from typing import List, Dict, Optional
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -227,26 +227,45 @@ class FIPEScraper:
     
     def _select_dropdown_option(self, select_id: str, option_value: str):
         """
-        Select a specific option from a dropdown by its value.
-        
+        Select a specific option from a dropdown by its index.
+
+        Uses JavaScript to change the hidden select element and trigger Chosen update.
+
         Args:
             select_id: The base ID of the select element
-            option_value: The value/index of the option to select
+            option_value: The index of the option to select (as string)
         """
         try:
-            # Click to open dropdown
-            chosen_id = f"{select_id}_chosen"
-            self._wait_and_click(chosen_id)
-            
-            # Find and click the specific option
-            option_selector = f"{chosen_id} .chosen-results li[data-option-array-index='{option_value}']"
-            option = WebDriverWait(self.driver, 5).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, option_selector))
-            )
-            option.click()
-            
+            logger.debug(f"Selecting option {option_value} in select {select_id}")
+
+            # Use JavaScript to select the option and trigger change event
+            # This works with Chosen plugin which hides the native select
+            script = f"""
+            var select = document.getElementById('{select_id}');
+            if (select) {{
+                select.selectedIndex = {option_value};
+                // Trigger change event for Chosen to update
+                var event = new Event('change', {{ bubbles: true }});
+                select.dispatchEvent(event);
+                // Also trigger jQuery change if available
+                if (typeof jQuery !== 'undefined') {{
+                    jQuery(select).trigger('change').trigger('chosen:updated');
+                }}
+                return true;
+            }}
+            return false;
+            """
+
+            result = self.driver.execute_script(script)
+
+            if result:
+                logger.debug(f"Successfully selected option {option_value} using JavaScript")
+            else:
+                logger.warning(f"JavaScript selection returned false for {select_id}")
+
+            # Wait for any AJAX requests or page updates
             time.sleep(config.SCRAPING_CONFIG['delay_between_requests'])
-            
+
         except Exception as e:
             logger.error(f"Error selecting option {option_value} for {select_id}: {e}")
     
