@@ -215,13 +215,6 @@ class FIPEScraper:
 
         except Exception as e:
             logger.error(f"Error getting dropdown options for {select_id}: {e}")
-            # Try to take a screenshot for debugging
-            try:
-                screenshot_path = f"error_screenshot_{select_id}.png"
-                self.driver.save_screenshot(screenshot_path)
-                logger.info(f"Screenshot saved to {screenshot_path}")
-            except:
-                pass
 
         return options
     
@@ -296,22 +289,17 @@ class FIPEScraper:
             logger.info("Scrolling to consultation form...")
             self.driver.execute_script("window.scrollTo(0, 800);")
             time.sleep(2)
-            # self.driver.save_screenshot("debug_before_click.png")
 
-            # Click on the car consultation accordion to expand it
-            logger.info("Looking for car consultation accordion...")
+            # Click on the car consultation accordion to expand it (if needed)
             try:
-                # Find and click the car accordion header
-                car_accordion = WebDriverWait(self.driver, 10).until(
+                car_accordion = WebDriverWait(self.driver, 5).until(
                     EC.element_to_be_clickable((By.XPATH, "//h3[contains(text(), 'CARROS')]|//div[contains(text(), 'CONSULTA DE CARROS')]"))
                 )
-                logger.info(f"Found car accordion: {car_accordion.text[:50]}")
                 car_accordion.click()
-                time.sleep(3)
-                # self.driver.save_screenshot("debug_after_accordion_click.png")
-                logger.info("Clicked car consultation accordion")
+                time.sleep(2)
+                logger.debug("Clicked car consultation accordion")
             except TimeoutException:
-                logger.warning("Could not find car accordion, it might already be expanded")
+                logger.debug("Car accordion not found - likely already expanded")
 
             # Wait for the select element to be ready
             logger.info(f"Waiting for select element: {config.ELEMENT_IDS['reference_month']}")
@@ -327,7 +315,6 @@ class FIPEScraper:
 
             except TimeoutException:
                 logger.error(f"Could not find select element: {config.ELEMENT_IDS['reference_month']}")
-                self.driver.save_screenshot("debug_no_select.png")
                 raise
 
             # Give extra time for JavaScript to initialize
@@ -415,11 +402,10 @@ class FIPEScraper:
                                 )
                                 # Use JavaScript click as it's more reliable for links styled as buttons
                                 self.driver.execute_script("arguments[0].click();", search_button)
-                                logger.debug("Clicked Pesquisar button using JavaScript")
+                                logger.debug("Clicked Pesquisar button")
                                 time.sleep(2)  # Wait for AJAX to load results
                             except Exception as e:
                                 logger.error(f"Could not click Pesquisar button: {e}")
-                                self.driver.save_screenshot("error_button_click.png")
                                 # Continue anyway to attempt price extraction
 
                             # Save year to database
@@ -479,8 +465,7 @@ class FIPEScraper:
                 )
                 logger.debug("Results table found!")
             except TimeoutException:
-                logger.error("Timeout waiting for results table after selecting year")
-                self.driver.save_screenshot("error_no_results_table.png")
+                logger.error("Timeout waiting for results table")
                 return None
 
             # Use JavaScript to find and extract the data
@@ -519,13 +504,8 @@ class FIPEScraper:
             # Check if we got an error
             if isinstance(result, dict) and 'error' in result:
                 logger.error(f"JavaScript extraction error: {result['error']}")
-                if 'html' in result:
-                    logger.error(f"Page HTML preview: {result['html'][:500]}")
                 if 'containerHtml' in result:
-                    logger.error(f"Container HTML: {result['containerHtml'][:500]}")
-                if 'containerText' in result:
-                    logger.error(f"Container text: {result['containerText'][:300]}")
-                self.driver.save_screenshot("error_js_extraction.png")
+                    logger.debug(f"Container HTML: {result['containerHtml'][:200]}")
                 return None
 
             # Log what we extracted
@@ -545,7 +525,6 @@ class FIPEScraper:
 
             if not price_text:
                 logger.warning(f"Could not find price in extracted data. Keys: {list(result.keys())}")
-                self.driver.save_screenshot("error_no_price_in_data.png")
                 return None
 
             # Clean price text (remove "R$", commas, etc.)
@@ -560,13 +539,7 @@ class FIPEScraper:
 
         except Exception as e:
             logger.warning(f"Could not extract price data: {e}")
-            import traceback
-            logger.debug(f"Traceback: {traceback.format_exc()}")
-            # Save screenshot for debugging
-            try:
-                self.driver.save_screenshot("error_extract_price.png")
-            except:
-                pass
+            logger.debug(f"Exception details: {str(e)}")
             return None
     
     def _clean_price(self, price_text: str) -> float:
