@@ -24,11 +24,12 @@ ELEMENT_IDS = {
     'brand': 'selectMarcacarro',
     'model': 'selectAnoModelocarro',
     'year': 'selectAnocarro',
+    'search_button': 'buttonConsultarcarro',  # Submit button to get price
 }
 
 # Selenium configuration
 SELENIUM_CONFIG = {
-    'headless': False,  # Set to False if you want to see the browser
+    'headless': True,  # Set to False if you want to see the browser
     'implicit_wait': 10,  # Seconds to wait for elements to appear
     'page_load_timeout': 30,  # Seconds to wait for page to load
 }

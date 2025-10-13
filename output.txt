@@ -1,0 +1,252 @@
+[32m2025-10-13 19:42:21.778[0m | [1mINFO    [0m | [36m__main__[0m:[36m__init__[0m:[36m57[0m - [1mInitializing FIPE Scraper...[0m
+2025-10-13 19:42:23,500 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-10-13 19:42:23,500 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("reference_months")
+2025-10-13 19:42:23,500 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-10-13 19:42:23,500 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("brands")
+2025-10-13 19:42:23,500 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-10-13 19:42:23,500 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("car_models")
+2025-10-13 19:42:23,500 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-10-13 19:42:23,501 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("model_years")
+2025-10-13 19:42:23,501 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-10-13 19:42:23,501 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("car_prices")
+2025-10-13 19:42:23,501 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-10-13 19:42:23,501 INFO sqlalchemy.engine.Engine COMMIT
+[32m2025-10-13 19:42:23.501[0m | [1mINFO    [0m | [36m__main__[0m:[36m__init__[0m:[36m69[0m - [1mScraper initialized successfully![0m
+[32m2025-10-13 19:42:23.501[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m282[0m - [1mStarting data scraping...[0m
+[32m2025-10-13 19:42:23.501[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m286[0m - [1mLoading FIPE website: https://veiculos.fipe.org.br/[0m
+[32m2025-10-13 19:42:27.361[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m292[0m - [1mCurrent URL: https://veiculos.fipe.org.br/[0m
+[32m2025-10-13 19:42:27.363[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m293[0m - [1mPage title: Tabela Fipe - Fundação Instituto de Pesquisas Econômicas - Fipe[0m
+[32m2025-10-13 19:42:27.363[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m296[0m - [1mScrolling to consultation form...[0m
+[32m2025-10-13 19:42:29.366[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m302[0m - [1mLooking for car consultation accordion...[0m
+[32m2025-10-13 19:42:39.382[0m | [33m[1mWARNING [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m314[0m - [33m[1mCould not find car accordion, it might already be expanded[0m
+[32m2025-10-13 19:42:39.382[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m317[0m - [1mWaiting for select element: selectTabelaReferenciacarro[0m
+[32m2025-10-13 19:42:39.386[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m322[0m - [1mFound select element[0m
+[32m2025-10-13 19:42:43.389[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m146[0m - [34m[1mTrying to get options from native select: selectTabelaReferenciacarro[0m
+[32m2025-10-13 19:42:43.404[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m151[0m - [34m[1mFound 298 options in native select element[0m
+[32m2025-10-13 19:42:43.412[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 0: text='outubro/2025', value='326'[0m
+[32m2025-10-13 19:42:43.416[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 1: text='setembro/2025', value='325'[0m
+[32m2025-10-13 19:42:43.420[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 2: text='agosto/2025', value='324'[0m
+[32m2025-10-13 19:42:43.424[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 3: text='julho/2025', value='323'[0m
+[32m2025-10-13 19:42:43.428[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 4: text='junho/2025', value='322'[0m
+[32m2025-10-13 19:42:44.505[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m175[0m - [34m[1mSuccessfully extracted 298 options from native select[0m
+[32m2025-10-13 19:42:44.505[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m177[0m - [34m[1mFirst 3 options: [{'value': '0', 'text': 'outubro/2025'}, {'value': '1', 'text': 'setembro/2025'}, {'value': '2', 'text': 'agosto/2025'}][0m
+[32m2025-10-13 19:42:44.505[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m338[0m - [1mFound 298 reference months available[0m
+[32m2025-10-13 19:42:44.505[0m | [1mINFO    [0m | [36m__main__[0m:[36m_filter_months_by_date_range[0m:[36m638[0m - [1mFiltering months: 2024-01 to 2024-01[0m
+[32m2025-10-13 19:42:44.505[0m | [1mINFO    [0m | [36m__main__[0m:[36m_filter_months_by_date_range[0m:[36m648[0m - [1mFiltered to 1 month(s) out of 298 available[0m
+[32m2025-10-13 19:42:44.505[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m345[0m - [1mProcessing month 1/1: janeiro/2024[0m
+[32m2025-10-13 19:42:44.505[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m239[0m - [34m[1mSelecting option 21 in select selectTabelaReferenciacarro[0m
+[32m2025-10-13 19:42:44.573[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_select_dropdown_option[0m:[36m262[0m - [34m[1mSuccessfully selected option 21 using JavaScript[0m
+2025-10-13 19:42:46,581 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-10-13 19:42:46,582 INFO sqlalchemy.engine.Engine SELECT reference_months.id AS reference_months_id, reference_months.month_code AS reference_months_month_code, reference_months.month_date AS reference_months_month_date, reference_months.created_at AS reference_months_created_at 
+FROM reference_months 
+WHERE reference_months.month_code = ?
+ LIMIT ? OFFSET ?
+2025-10-13 19:42:46,583 INFO sqlalchemy.engine.Engine [generated in 0.00009s] ('21', 1, 0)
+[32m2025-10-13 19:42:46.583[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m146[0m - [34m[1mTrying to get options from native select: selectMarcacarro[0m
+[32m2025-10-13 19:42:46.592[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m151[0m - [34m[1mFound 98 options in native select element[0m
+[32m2025-10-13 19:42:46.602[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 0: text='', value=''[0m
+[32m2025-10-13 19:42:46.612[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 1: text='Acura', value='1'[0m
+[32m2025-10-13 19:42:46.619[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 2: text='Agrale', value='2'[0m
+[32m2025-10-13 19:42:46.625[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 3: text='Alfa Romeo', value='3'[0m
+[32m2025-10-13 19:42:46.632[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m166[0m - [34m[1m  Option 4: text='AM Gen', value='4'[0m
+[32m2025-10-13 19:42:47.270[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m175[0m - [34m[1mSuccessfully extracted 97 options from native select[0m
+[32m2025-10-13 19:42:47.270[0m | [34m[1mDEBUG   [0m | [36m__main__[0m:[36m_get_dropdown_options[0m:[36m177[0m - [34m[1mFirst 3 options: [{'value': '1', 'text': 'Acura'}, {'value': '2', 'text': 'Agrale'}, {'value': '3', 'text': 'Alfa Romeo'}][0m
+[32m2025-10-13 19:42:47.270[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m358[0m - [1mFound 97 brands[0m
+[32m2025-10-13 19:42:47.270[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 1/97: Acura[0m
+[32m2025-10-13 19:42:47.270[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_1[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 2/97: Agrale[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_2[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 3/97: Alfa Romeo[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_3[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 4/97: AM Gen[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_4[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 5/97: Asia Motors[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_5[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 6/97: ASTON MARTIN[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_6[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 7/97: Audi[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_7[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 8/97: Baby[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_8[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 9/97: BMW[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_9[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 10/97: BRM[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_10[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 11/97: Bugre[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_11[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 12/97: BYD[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_12[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 13/97: CAB Motors[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_13[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 14/97: Cadillac[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_14[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 15/97: Caoa Chery[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_15[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 16/97: Caoa Chery/Chery[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_16[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 17/97: CBT Jipe[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_17[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 18/97: CHANA[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_18[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 19/97: CHANGAN[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_19[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 20/97: Chrysler[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_20[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 21/97: Citroën[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_21[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 22/97: Cross Lander[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_22[0m
+[32m2025-10-13 19:42:47.271[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 23/97: D2D Motors[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_23[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 24/97: Daewoo[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_24[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 25/97: Daihatsu[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_25[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 26/97: DFSK[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_26[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 27/97: Dodge[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_27[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 28/97: EFFA[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_28[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 29/97: Engesa[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_29[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 30/97: Envemo[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_30[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 31/97: Ferrari[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_31[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 32/97: Fiat[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_32[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 33/97: Fibravan[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_33[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 34/97: Ford[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_34[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 35/97: FOTON[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_35[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 36/97: Fyber[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_36[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 37/97: GEELY[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_37[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 38/97: GM - Chevrolet[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_38[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 39/97: GREAT WALL[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_39[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 40/97: Gurgel[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_40[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 41/97: GWM[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_41[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 42/97: HAFEI[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_42[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 43/97: HITECH ELECTRIC[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_43[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 44/97: Honda[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_44[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 45/97: Hyundai[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_45[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 46/97: Isuzu[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_46[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 47/97: IVECO[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_47[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 48/97: JAC[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_48[0m
+[32m2025-10-13 19:42:47.272[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 49/97: Jaguar[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_49[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 50/97: Jeep[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_50[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 51/97: JINBEI[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_51[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 52/97: JPX[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_52[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 53/97: Kia Motors[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_53[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 54/97: Lada[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_54[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 55/97: LAMBORGHINI[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_55[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 56/97: Land Rover[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_56[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 57/97: Lexus[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_57[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 58/97: LIFAN[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_58[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 59/97: LOBINI[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_59[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 60/97: Lotus[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_60[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 61/97: Mahindra[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_61[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 62/97: Maserati[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_62[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 63/97: Matra[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_63[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 64/97: Mazda[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_64[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 65/97: Mclaren[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_65[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 66/97: Mercedes-Benz[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_66[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 67/97: Mercury[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_67[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 68/97: MG[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_68[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 69/97: MINI[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_69[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 70/97: Mitsubishi[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_70[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 71/97: Miura[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_71[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 72/97: Nissan[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_72[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 73/97: Peugeot[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_73[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 74/97: Plymouth[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_74[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 75/97: Pontiac[0m
+[32m2025-10-13 19:42:47.273[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_75[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 76/97: Porsche[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_76[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 77/97: RAM[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_77[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 78/97: RELY[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_78[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 79/97: Renault[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_79[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 80/97: Rolls-Royce[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_80[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 81/97: Rover[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_81[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 82/97: Saab[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_82[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 83/97: Saturn[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_83[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 84/97: Seat[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_84[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 85/97: SERES[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_85[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 86/97: SHINERAY[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_86[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 87/97: smart[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_87[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 88/97: SSANGYONG[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_88[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 89/97: Subaru[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_89[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 90/97: Suzuki[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_90[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 91/97: TAC[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_91[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 92/97: Toyota[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_92[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 93/97: Troller[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_93[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 94/97: Volvo[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_94[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 95/97: VW - VolksWagen[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_95[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 96/97: Wake[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_96[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m362[0m - [1mProcessing brand 97/97: Walk[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m367[0m - [1mSkipping already scraped: 21_97[0m
+[32m2025-10-13 19:42:47.274[0m | [32m[1mSUCCESS [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m435[0m - [32m[1m\u2713\u2713 Completed all data for reference month: janeiro/2024[0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mscrape_all_data[0m:[36m437[0m - [1mScraping completed successfully![0m
+[32m2025-10-13 19:42:47.274[0m | [1mINFO    [0m | [36m__main__[0m:[36mcleanup[0m:[36m747[0m - [1mCleaning up...[0m
+2025-10-13 19:42:49,321 INFO sqlalchemy.engine.Engine ROLLBACK

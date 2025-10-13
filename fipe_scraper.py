@@ -296,7 +296,7 @@ class FIPEScraper:
             logger.info("Scrolling to consultation form...")
             self.driver.execute_script("window.scrollTo(0, 800);")
             time.sleep(2)
-            self.driver.save_screenshot("debug_before_click.png")
+            # self.driver.save_screenshot("debug_before_click.png")
 
             # Click on the car consultation accordion to expand it
             logger.info("Looking for car consultation accordion...")
@@ -308,7 +308,7 @@ class FIPEScraper:
                 logger.info(f"Found car accordion: {car_accordion.text[:50]}")
                 car_accordion.click()
                 time.sleep(3)
-                self.driver.save_screenshot("debug_after_accordion_click.png")
+                # self.driver.save_screenshot("debug_after_accordion_click.png")
                 logger.info("Clicked car consultation accordion")
             except TimeoutException:
                 logger.warning("Could not find car accordion, it might already be expanded")
@@ -408,6 +408,17 @@ class FIPEScraper:
                                 year['value']
                             )
 
+                            # Click the "Pesquisar" (Search) button to submit the form
+                            try:
+                                search_button = WebDriverWait(self.driver, 10).until(
+                                    EC.element_to_be_clickable((By.ID, config.ELEMENT_IDS['search_button']))
+                                )
+                                search_button.click()
+                                logger.debug("Clicked search button (Pesquisar)")
+                                time.sleep(1)  # Wait for AJAX to load results
+                            except Exception as e:
+                                logger.warning(f"Could not click search button: {e}")
+
                             # Save year to database
                             db_year = self._save_model_year(db_model, year)
 
@@ -446,41 +457,113 @@ class FIPEScraper:
     def _extract_price_data(self) -> Optional[Dict]:
         """
         Extract the price data from the results area.
-        
+
         After selecting all options, FIPE displays the price information.
         This method extracts that data.
-        
+
         Returns:
             Dictionary with price information or None if not found
         """
         try:
-            # Wait for results to load
-            WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.CLASS_NAME, "resultado-padrao"))
-            )
-            
-            # Extract price (usually in a specific div or td element)
-            # You'll need to inspect the website to find the exact selector
-            price_element = self.driver.find_element(By.CSS_SELECTOR, ".resultado-padrao td:nth-child(2)")
-            price_text = price_element.text
-            
+            # Wait for the results table to appear using explicit wait
+            # The table appears inside the resultadoConsultacarroFiltros div after AJAX completes
+            logger.debug("Waiting for results table to appear...")
+
+            try:
+                # Wait up to 20 seconds for the table to appear
+                results_table = WebDriverWait(self.driver, 20).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "#resultadoConsultacarroFiltros table"))
+                )
+                logger.debug("Results table found!")
+            except TimeoutException:
+                logger.error("Timeout waiting for results table")
+                self.driver.save_screenshot("error_no_results_table.png")
+                return None
+
+            # Use JavaScript to find and extract the data
+            # This is more reliable than CSS selectors which may vary
+            script = """
+            // Find the results container
+            var container = document.getElementById('resultadoConsultacarroFiltros');
+            if (!container) {
+                return {error: 'Container not found'};
+            }
+
+            // Find the table
+            var table = container.querySelector('table');
+            if (!table) {
+                return {error: 'Table not found', containerHtml: container.innerHTML.substring(0, 1000)};
+            }
+
+            // Extract all rows
+            var rows = table.querySelectorAll('tbody tr');
+            var data = {};
+
+            for (var i = 0; i < rows.length; i++) {
+                var cells = rows[i].querySelectorAll('td');
+                if (cells.length >= 2) {
+                    var label = cells[0].textContent.trim();
+                    var value = cells[1].textContent.trim();
+                    data[label] = value;
+                }
+            }
+
+            return data;
+            """
+
+            result = self.driver.execute_script(script)
+
+            # Check if we got an error
+            if isinstance(result, dict) and 'error' in result:
+                logger.error(f"JavaScript extraction error: {result['error']}")
+                if 'html' in result:
+                    logger.error(f"Page HTML preview: {result['html'][:500]}")
+                if 'containerHtml' in result:
+                    logger.error(f"Container HTML: {result['containerHtml'][:500]}")
+                if 'containerText' in result:
+                    logger.error(f"Container text: {result['containerText'][:300]}")
+                self.driver.save_screenshot("error_js_extraction.png")
+                return None
+
+            # Log what we extracted
+            logger.debug(f"Extracted data from table: {result}")
+
+            # Find price in the extracted data
+            # Common keys: "Valor", "Preço", "Price"
+            price_text = None
+            fipe_code = None
+
+            for key, value in result.items():
+                key_lower = key.lower()
+                if 'valor' in key_lower or 'preço' in key_lower or 'price' in key_lower:
+                    price_text = value
+                elif 'fipe' in key_lower or 'código' in key_lower:
+                    fipe_code = value
+
+            if not price_text:
+                logger.warning(f"Could not find price in extracted data. Keys: {list(result.keys())}")
+                self.driver.save_screenshot("error_no_price_in_data.png")
+                return None
+
             # Clean price text (remove "R$", commas, etc.)
             price = self._clean_price(price_text)
-            
-            # Extract FIPE code if available
-            try:
-                fipe_code_element = self.driver.find_element(By.CSS_SELECTOR, ".codigo-fipe")
-                fipe_code = fipe_code_element.text
-            except NoSuchElementException:
-                fipe_code = None
-            
+
+            logger.debug(f"Extracted price: R$ {price:.2f}, FIPE code: {fipe_code}")
+
             return {
                 'price': price,
                 'fipe_code': fipe_code
             }
-            
+
         except Exception as e:
             logger.warning(f"Could not extract price data: {e}")
+            import traceback
+            logger.debug(f"Traceback: {traceback.format_exc()}")
+            # Save screenshot for debugging
+            try:
+                self.driver.save_screenshot("error_extract_price.png")
+            except:
+                pass
             return None
     
     def _clean_price(self, price_text: str) -> float:

@@ -1,0 +1,1 @@
+[32m2025-10-13 19:44:35.763[0m | [1mINFO    [0m | [36m__main__[0m:[36m__init__[0m:[36m57[0m - [1mInitializing FIPE Scraper...[0m
