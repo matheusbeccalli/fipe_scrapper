@@ -20,6 +20,7 @@ from typing import List, Dict, Optional
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
@@ -397,13 +398,34 @@ class FIPEScraper:
 
                             # Click the "Pesquisar" (Search) button to submit and get price
                             try:
-                                search_button = WebDriverWait(self.driver, 5).until(
+                                search_button = WebDriverWait(self.driver, 10).until(
                                     EC.presence_of_element_located((By.ID, config.ELEMENT_IDS['search_button']))
                                 )
                                 # Use JavaScript click as it's more reliable for links styled as buttons
                                 self.driver.execute_script("arguments[0].click();", search_button)
                                 logger.debug("Clicked Pesquisar button")
-                                time.sleep(2)  # Wait for AJAX to load results
+                                time.sleep(3)  # Wait for AJAX to load results or modal to appear
+
+                                # Check if "no data" modal appeared
+                                try:
+                                    no_data_modal = self.driver.find_element(By.CSS_SELECTOR, ".jqmWindow:not(.jqmHide)")
+                                    modal_text = no_data_modal.text.lower()
+                                    if 'dados não encontrados' in modal_text or 'data not found' in modal_text:
+                                        logger.warning(f"No data found for {model['text']} {year['text']} in {month['text']}")
+                                        # Close the modal
+                                        try:
+                                            close_button = no_data_modal.find_element(By.CSS_SELECTOR, ".jqmClose")
+                                            close_button.click()
+                                            time.sleep(0.5)
+                                        except:
+                                            # If can't find close button, press escape
+                                            self.driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.ESCAPE)
+                                            time.sleep(0.5)
+                                        continue  # Skip to next year
+                                except NoSuchElementException:
+                                    # No modal, continue normally
+                                    pass
+
                             except Exception as e:
                                 logger.error(f"Could not click Pesquisar button: {e}")
                                 # Continue anyway to attempt price extraction
