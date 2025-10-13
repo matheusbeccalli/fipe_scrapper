@@ -129,10 +129,9 @@ class FIPEScraper:
     
     def _get_dropdown_options(self, select_id: str) -> List[Dict[str, str]]:
         """
-        Get all options from a dropdown menu (Chosen jQuery plugin).
+        Get all options from a dropdown menu.
 
-        The FIPE website uses the Chosen plugin which creates a custom dropdown.
-        We need to click the dropdown, then extract all the options.
+        Tries native select element first, then falls back to Chosen jQuery plugin.
 
         Args:
             select_id: The base ID of the select element
@@ -143,9 +142,49 @@ class FIPEScraper:
         options = []
 
         try:
+            # First, try to get options directly from the native select element
+            logger.debug(f"Trying to get options from native select: {select_id}")
+            select_element = self.driver.find_element(By.ID, select_id)
+            option_elements = select_element.find_elements(By.TAG_NAME, "option")
+
+            if len(option_elements) > 0:
+                logger.debug(f"Found {len(option_elements)} options in native select element")
+                for idx, option in enumerate(option_elements):
+                    # Try multiple ways to get option text
+                    option_text = option.text.strip()
+                    if not option_text:
+                        option_text = option.get_attribute('innerHTML').strip()
+                    if not option_text:
+                        option_text = option.get_attribute('innerText').strip()
+                    if not option_text:
+                        option_text = option.get_attribute('textContent').strip()
+
+                    option_value = option.get_attribute('value')
+
+                    # Debug: log first few options
+                    if idx < 5:
+                        logger.debug(f"  Option {idx}: text='{option_text}', value='{option_value}'")
+
+                    # Skip completely empty options (no text)
+                    if option_text:
+                        options.append({
+                            'value': str(idx),  # Use index as value (for Chosen compatibility)
+                            'text': option_text
+                        })
+
+                logger.debug(f"Successfully extracted {len(options)} options from native select")
+                if len(options) > 0:
+                    logger.debug(f"First 3 options: {options[:3]}")
+                return options
+
+        except Exception as e:
+            logger.debug(f"Could not get options from native select: {e}")
+
+        # Fallback to Chosen plugin method
+        try:
             # Click the dropdown to open it
             chosen_id = f"{select_id}_chosen"
-            logger.debug(f"Trying to open dropdown: {chosen_id}")
+            logger.debug(f"Falling back to Chosen dropdown: {chosen_id}")
             self._wait_and_click(chosen_id)
 
             # Wait for options to load
@@ -156,7 +195,7 @@ class FIPEScraper:
             results_id = f"{chosen_id} .chosen-results li"
             option_elements = self.driver.find_elements(By.CSS_SELECTOR, results_id)
 
-            logger.debug(f"Found {len(option_elements)} option elements in {select_id}")
+            logger.debug(f"Found {len(option_elements)} option elements in Chosen dropdown")
 
             for option in option_elements:
                 # Get the data-option-array-index attribute (the value)
@@ -172,7 +211,7 @@ class FIPEScraper:
             # Close the dropdown by clicking somewhere else
             self.driver.find_element(By.TAG_NAME, 'body').click()
 
-            logger.debug(f"Successfully extracted {len(options)} options from {select_id}")
+            logger.debug(f"Successfully extracted {len(options)} options from Chosen dropdown")
 
         except Exception as e:
             logger.error(f"Error getting dropdown options for {select_id}: {e}")
@@ -222,24 +261,58 @@ class FIPEScraper:
         4. Extract and save data
         """
         logger.info("Starting data scraping...")
-        
+
         try:
             # Load the FIPE website
+            logger.info(f"Loading FIPE website: {config.FIPE_URL}")
             self.driver.get(config.FIPE_URL)
-            time.sleep(3)  # Wait for page to fully load
-            
-            # Click on "Consulta de Carros e Utilitários Pequenos"
-            car_button = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, f"a[data-slug='{config.ELEMENT_IDS['vehicle_type']}']"))
-            )
-            car_button.click()
 
-            # Wait for the dropdown to be present before trying to interact with it
-            logger.info("Waiting for reference month dropdown to load...")
-            WebDriverWait(self.driver, 15).until(
-                EC.presence_of_element_located((By.ID, f"{config.ELEMENT_IDS['reference_month']}_chosen"))
-            )
-            time.sleep(2)  # Additional time for JavaScript to fully initialize
+            # Wait for page to load completely
+            time.sleep(3)
+
+            logger.info(f"Current URL: {self.driver.current_url}")
+            logger.info(f"Page title: {self.driver.title}")
+
+            # Scroll down to the consultation form area
+            logger.info("Scrolling to consultation form...")
+            self.driver.execute_script("window.scrollTo(0, 800);")
+            time.sleep(2)
+            self.driver.save_screenshot("debug_before_click.png")
+
+            # Click on the car consultation accordion to expand it
+            logger.info("Looking for car consultation accordion...")
+            try:
+                # Find and click the car accordion header
+                car_accordion = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, "//h3[contains(text(), 'CARROS')]|//div[contains(text(), 'CONSULTA DE CARROS')]"))
+                )
+                logger.info(f"Found car accordion: {car_accordion.text[:50]}")
+                car_accordion.click()
+                time.sleep(3)
+                self.driver.save_screenshot("debug_after_accordion_click.png")
+                logger.info("Clicked car consultation accordion")
+            except TimeoutException:
+                logger.warning("Could not find car accordion, it might already be expanded")
+
+            # Wait for the select element to be ready
+            logger.info(f"Waiting for select element: {config.ELEMENT_IDS['reference_month']}")
+            try:
+                select_element = WebDriverWait(self.driver, 15).until(
+                    EC.presence_of_element_located((By.ID, config.ELEMENT_IDS['reference_month']))
+                )
+                logger.info("Found select element")
+
+                # Scroll to it
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", select_element)
+                time.sleep(2)
+
+            except TimeoutException:
+                logger.error(f"Could not find select element: {config.ELEMENT_IDS['reference_month']}")
+                self.driver.save_screenshot("debug_no_select.png")
+                raise
+
+            # Give extra time for JavaScript to initialize
+            time.sleep(2)
 
             # Get all reference months
             all_months = self._get_dropdown_options(config.ELEMENT_IDS['reference_month'])
