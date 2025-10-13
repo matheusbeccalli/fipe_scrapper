@@ -25,10 +25,10 @@ class FIPEDataExporter:
     and into formats you can work with.
     """
     
-    def __init__(self, database_url: str = None):
+    def __init__(self, database_url: Optional[str] = None):
         """
         Initialize the exporter.
-        
+
         Args:
             database_url: SQLAlchemy database URL. If None, uses config.
         """
