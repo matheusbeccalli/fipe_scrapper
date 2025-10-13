@@ -94,8 +94,8 @@ def main():
     
     # Load data into pandas for custom analysis
     query = """
-    SELECT 
-        rm.month_name,
+    SELECT
+        rm.month_date,
         b.brand_name,
         cm.model_name,
         my.year_description,
@@ -105,6 +105,7 @@ def main():
     JOIN model_years my ON cp.model_year_id = my.id
     JOIN car_models cm ON my.car_model_id = cm.id
     JOIN brands b ON cm.brand_id = b.id
+    ORDER BY rm.month_date
     """
     
     df = pd.read_sql(query, exporter.engine)

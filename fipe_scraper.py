@@ -356,22 +356,65 @@ class FIPEScraper:
     def _clean_price(self, price_text: str) -> float:
         """
         Clean price text and convert to float.
-        
+
         Example: "R$ 45.678,90" -> 45678.90
-        
+
         Args:
             price_text: Raw price text from website
-            
+
         Returns:
             Price as float
         """
         # Remove currency symbol and spaces
         price_text = price_text.replace('R$', '').strip()
-        
+
         # In Brazilian format, . is thousands separator and , is decimal
         price_text = price_text.replace('.', '').replace(',', '.')
-        
+
         return float(price_text)
+
+    def _parse_month_string(self, month_text: str) -> datetime:
+        """
+        Parse Portuguese month string to datetime object.
+
+        Example: "dezembro/2024" -> datetime(2024, 12, 1)
+
+        Args:
+            month_text: Month string in Portuguese format (e.g., "dezembro/2024")
+
+        Returns:
+            datetime object (set to first day of month)
+        """
+        # Portuguese month names mapping
+        portuguese_months = {
+            'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4,
+            'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8,
+            'setembro': 9, 'outubro': 10, 'novembro': 11, 'dezembro': 12
+        }
+
+        # Split month and year (e.g., "dezembro/2024" -> ["dezembro", "2024"])
+        parts = month_text.lower().split('/')
+        if len(parts) != 2:
+            logger.warning(f"Unexpected month format: {month_text}")
+            return datetime.now()  # Fallback to current date
+
+        month_name, year_str = parts
+
+        # Get month number from Portuguese name
+        month_number = portuguese_months.get(month_name.strip())
+        if not month_number:
+            logger.warning(f"Unknown month name: {month_name}")
+            return datetime.now()  # Fallback to current date
+
+        # Parse year
+        try:
+            year = int(year_str.strip())
+        except ValueError:
+            logger.warning(f"Invalid year: {year_str}")
+            return datetime.now()  # Fallback to current date
+
+        # Return datetime object (first day of the month)
+        return datetime(year, month_number, 1)
     
     # Database saving methods
     
@@ -380,15 +423,18 @@ class FIPEScraper:
         month = self.db_session.query(ReferenceMonth).filter_by(
             month_code=month_data['value']
         ).first()
-        
+
         if not month:
+            # Parse the month string to datetime
+            month_date = self._parse_month_string(month_data['text'])
+
             month = ReferenceMonth(
                 month_code=month_data['value'],
-                month_name=month_data['text']
+                month_date=month_date.date()  # Store as date object
             )
             self.db_session.add(month)
             self.db_session.commit()
-        
+
         return month
     
     def _save_brand(self, brand_data: Dict) -> Brand:

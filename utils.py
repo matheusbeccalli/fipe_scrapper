@@ -40,16 +40,16 @@ class FIPEDataExporter:
     def export_all_to_csv(self, filename: str = "fipe_data_export.csv"):
         """
         Export all data to a CSV file.
-        
+
         This creates a denormalized CSV with all information in one table.
         Perfect for opening in Excel or doing analysis in pandas.
-        
+
         Args:
             filename: Name of the output CSV file
         """
         query = """
-        SELECT 
-            rm.month_name as reference_month,
+        SELECT
+            rm.month_date,
             rm.month_code,
             b.brand_name,
             b.brand_code,
@@ -65,9 +65,9 @@ class FIPEDataExporter:
         JOIN model_years my ON cp.model_year_id = my.id
         JOIN car_models cm ON my.car_model_id = cm.id
         JOIN brands b ON cm.brand_id = b.id
-        ORDER BY rm.month_name DESC, b.brand_name, cm.model_name, my.year_description
+        ORDER BY rm.month_date DESC, b.brand_name, cm.model_name, my.year_description
         """
-        
+
         df = pd.read_sql(query, self.engine)
         df.to_csv(filename, index=False, encoding='utf-8-sig')  # utf-8-sig for Excel compatibility
         print(f"✓ Exported {len(df)} records to {filename}")
@@ -76,17 +76,17 @@ class FIPEDataExporter:
     def export_by_brand(self, brand_name: str, filename: Optional[str] = None):
         """
         Export data for a specific brand to CSV.
-        
+
         Args:
             brand_name: Name of the brand (e.g., "Volkswagen")
             filename: Output filename. If None, uses brand_name.csv
         """
         if filename is None:
             filename = f"{brand_name.replace(' ', '_')}_data.csv"
-        
+
         query = f"""
-        SELECT 
-            rm.month_name as reference_month,
+        SELECT
+            rm.month_date,
             b.brand_name,
             cm.model_name,
             my.year_description,
@@ -98,9 +98,9 @@ class FIPEDataExporter:
         JOIN car_models cm ON my.car_model_id = cm.id
         JOIN brands b ON cm.brand_id = b.id
         WHERE b.brand_name LIKE '%{brand_name}%'
-        ORDER BY rm.month_name DESC, cm.model_name, my.year_description
+        ORDER BY rm.month_date DESC, cm.model_name, my.year_description
         """
-        
+
         df = pd.read_sql(query, self.engine)
         df.to_csv(filename, index=False, encoding='utf-8-sig')
         print(f"✓ Exported {len(df)} records to {filename}")
@@ -109,18 +109,18 @@ class FIPEDataExporter:
     def get_price_history(self, brand_name: str, model_name: str, year_description: str) -> pd.DataFrame:
         """
         Get price history for a specific car over time.
-        
+
         Args:
             brand_name: Brand name (e.g., "Volkswagen")
             model_name: Model name (e.g., "Gol")
             year_description: Year description (e.g., "2020 Gasolina")
-            
+
         Returns:
-            DataFrame with month and price columns
+            DataFrame with month_date and price columns
         """
         query = f"""
-        SELECT 
-            rm.month_name,
+        SELECT
+            rm.month_date,
             cp.price
         FROM car_prices cp
         JOIN reference_months rm ON cp.reference_month_id = rm.id
@@ -130,9 +130,9 @@ class FIPEDataExporter:
         WHERE b.brand_name LIKE '%{brand_name}%'
         AND cm.model_name LIKE '%{model_name}%'
         AND my.year_description LIKE '%{year_description}%'
-        ORDER BY rm.month_name
+        ORDER BY rm.month_date
         """
-        
+
         df = pd.read_sql(query, self.engine)
         return df
     
@@ -162,37 +162,37 @@ class FIPEDataExporter:
     def get_most_expensive_cars(self, limit: int = 10) -> pd.DataFrame:
         """
         Get the most expensive cars in the most recent month.
-        
+
         Args:
             limit: Number of results to return
-            
+
         Returns:
             DataFrame with the most expensive cars
         """
         query = f"""
-        SELECT 
+        SELECT
             b.brand_name,
             cm.model_name,
             my.year_description,
             cp.price,
-            rm.month_name
+            rm.month_date
         FROM car_prices cp
         JOIN reference_months rm ON cp.reference_month_id = rm.id
         JOIN model_years my ON cp.model_year_id = my.id
         JOIN car_models cm ON my.car_model_id = cm.id
         JOIN brands b ON cm.brand_id = b.id
-        WHERE rm.id = (SELECT MAX(id) FROM reference_months)
+        WHERE rm.month_date = (SELECT MAX(month_date) FROM reference_months)
         ORDER BY cp.price DESC
         LIMIT {limit}
         """
-        
+
         df = pd.read_sql(query, self.engine)
         return df
     
     def get_database_stats(self):
         """
         Print statistics about the database.
-        
+
         Shows how much data has been collected.
         """
         # Count records in each table
@@ -203,20 +203,20 @@ class FIPEDataExporter:
             'Model Years': self.session.query(ModelYear).count(),
             'Price Records': self.session.query(CarPrice).count(),
         }
-        
+
         print("\n📊 Database Statistics:")
         print("-" * 40)
         for key, value in stats.items():
             print(f"{key:.<25} {value:>10,}")
         print("-" * 40)
-        
-        # Get date range
-        oldest_month = self.session.query(ReferenceMonth).order_by(ReferenceMonth.id).first()
-        newest_month = self.session.query(ReferenceMonth).order_by(ReferenceMonth.id.desc()).first()
-        
+
+        # Get date range using month_date field for proper chronological ordering
+        oldest_month = self.session.query(ReferenceMonth).order_by(ReferenceMonth.month_date).first()
+        newest_month = self.session.query(ReferenceMonth).order_by(ReferenceMonth.month_date.desc()).first()
+
         if oldest_month and newest_month:
-            print(f"\nDate Range: {oldest_month.month_name} to {newest_month.month_name}")
-        
+            print(f"\nDate Range: {oldest_month.month_date} to {newest_month.month_date}")
+
         return stats
     
     def close(self):

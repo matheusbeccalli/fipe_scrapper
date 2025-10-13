@@ -17,21 +17,21 @@ class ReferenceMonth(Base):
     """
     Stores the reference months available in FIPE table.
     Each month represents a data collection period.
-    
-    Example: "dezembro/2024" with code "312"
+
+    Example: code "312" represents December 2024 (stored as 2024-12-01)
     """
     __tablename__ = 'reference_months'
-    
+
     id = Column(Integer, primary_key=True)
     month_code = Column(String(50), unique=True, nullable=False)  # e.g., "312"
-    month_name = Column(String(50), nullable=False)  # e.g., "dezembro/2024"
+    month_date = Column(Date, nullable=False)  # Date representation (e.g., 2024-12-01)
     created_at = Column(Date, default=datetime.now)
-    
+
     # Relationship to prices
     prices = relationship("CarPrice", back_populates="reference_month")
-    
+
     def __repr__(self):
-        return f"<ReferenceMonth(month_name='{self.month_name}')>"
+        return f"<ReferenceMonth(month_code='{self.month_code}', month_date='{self.month_date}')>"
 
 
 class Brand(Base):
