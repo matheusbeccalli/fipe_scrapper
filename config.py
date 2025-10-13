@@ -32,7 +32,7 @@ DATABASE_URL = 'sqlite:///fipe_data.db'  # SQLite database file
 # Scraping behavior
 SCRAPING_CONFIG = {
     'delay_between_requests': 2,  # Seconds to wait between requests (be polite!)
-    'retry_attempts': 3,  # Number of times to retry failed requests
+    'retry_attempts': 5,  # Number of times to retry failed requests
     'retry_delay': 5,  # Seconds to wait before retrying
 }
 
@@ -40,15 +40,15 @@ SCRAPING_CONFIG = {
 LOG_CONFIG = {
     'log_file': 'fipe_scraper.log',
     'log_level': 'INFO',  # Options: DEBUG, INFO, WARNING, ERROR
-    'rotation': '10 MB',  # Rotate log file when it reaches this size
+    'rotation': '50 MB',  # Rotate log file when it reaches this size
 }
 
 # Date range configuration (optional)
 # Leave None to scrape all available months
 # Format: 'month_name/year' (e.g., 'janeiro/2020')
 DATE_RANGE = {
-    'start_month': None,  # e.g., 'janeiro/2020' or None for all
-    'end_month': None,    # e.g., 'dezembro/2024' or None for all
+    'start_month': 'janeiro/2024',  # e.g., 'janeiro/2020' or None for all
+    'end_month': 'dezembro/2024',    # e.g., 'dezembro/2024' or None for all
 }
 
 # Resume scraping configuration
