@@ -3,7 +3,16 @@ Configuration file for FIPE scraper
 
 This file contains all the settings and configurations needed for the scraper.
 You can modify these values without changing the main scraper code.
+
+Environment variables can be set in a .env file (recommended for sensitive data)
+or directly in your system environment.
 """
+
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if it exists
+load_dotenv()
 
 # Website configuration
 FIPE_URL = "https://veiculos.fipe.org.br/"
@@ -25,9 +34,11 @@ SELENIUM_CONFIG = {
 }
 
 # Database configuration
-DATABASE_URL = 'sqlite:///fipe_data.db'  # SQLite database file
-# For PostgreSQL: 'postgresql://username:password@localhost/fipe_db'
-# For MySQL: 'mysql+pymysql://username:password@localhost/fipe_db'
+# Use DATABASE_URL environment variable, or default to SQLite
+DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///fipe_data.db')
+# Examples for other databases (set in .env file):
+# PostgreSQL: DATABASE_URL=postgresql://username:password@localhost/fipe_db
+# MySQL: DATABASE_URL=mysql+pymysql://username:password@localhost/fipe_db
 
 # Scraping behavior
 SCRAPING_CONFIG = {
@@ -38,9 +49,9 @@ SCRAPING_CONFIG = {
 
 # Logging configuration
 LOG_CONFIG = {
-    'log_file': 'fipe_scraper.log',
-    'log_level': 'INFO',  # Options: DEBUG, INFO, WARNING, ERROR
-    'rotation': '50 MB',  # Rotate log file when it reaches this size
+    'log_file': os.getenv('LOG_FILE', 'fipe_scraper.log'),
+    'log_level': os.getenv('LOG_LEVEL', 'INFO'),  # Options: DEBUG, INFO, WARNING, ERROR
+    'rotation': os.getenv('LOG_ROTATION', '50 MB'),  # Rotate log file when it reaches this size
 }
 
 # Date range configuration (optional)

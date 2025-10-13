@@ -21,6 +21,10 @@ source venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
+# Configure environment variables (optional)
+cp .env.example .env
+# Edit .env with your database credentials if not using SQLite
+
 # Create database schema
 python database_models.py
 ```
@@ -112,6 +116,13 @@ All settings are in `config.py`:
 - **SELENIUM_CONFIG**: Browser behavior (set `headless: False` to see browser during debugging)
 - **SCRAPING_CONFIG**: Delays and retry logic
 - **DATABASE_URL**: SQLite by default, can use PostgreSQL/MySQL
+
+### Environment Variables
+Configuration can be customized using environment variables (recommended for sensitive data):
+- Create a `.env` file from `.env.example`: `cp .env.example .env`
+- Configure database: `DATABASE_URL=postgresql://user:pass@localhost/fipe_db`
+- Configure logging: `LOG_LEVEL=DEBUG`, `LOG_FILE=custom.log`
+- The `.env` file is ignored by git and will never be committed
 
 ## Common Issues
 
