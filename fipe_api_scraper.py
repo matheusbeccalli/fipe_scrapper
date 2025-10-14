@@ -75,7 +75,7 @@ class FIPEAPIScraper:
 
         # Concurrency control
         self.semaphore = asyncio.Semaphore(max_concurrent_requests)
-        self.request_delay = 0.3  # 300ms between requests (more conservative)
+        self.request_delay = 0.5  # 500ms between requests (very conservative)
         self.max_concurrent_requests = max_concurrent_requests
 
         # Retry configuration
@@ -83,16 +83,16 @@ class FIPEAPIScraper:
         self.backoff_multiplier = 2.0  # Double wait time on each retry
         self.rate_limit_pause = 5.0  # Longer pause on rate limits
 
-        # Adaptive rate limiting (more conservative thresholds)
-        self.adaptive_delay = 0.3  # Start with 300ms
-        self.min_delay = 0.15  # Don't go below 150ms
+        # Adaptive rate limiting (very conservative thresholds)
+        self.adaptive_delay = 0.5  # Start with 500ms (was 0.3s)
+        self.min_delay = 0.4  # Don't go below 400ms (was 0.15s)
         self.max_delay = 2.0  # Cap at 2 seconds
         self.error_threshold = 3  # Number of 520 errors before backing off
         self.rate_limit_threshold = 2  # Number of 429 errors before backing off
         self.recent_520_errors = 0
         self.recent_429_errors = 0
         self.consecutive_successes = 0
-        self.speedup_threshold = 50  # Need 50 successes before speeding up (was 20)
+        self.speedup_threshold = 100  # Need 100 successes before speeding up (was 50)
 
         # Statistics
         self.stats = {
@@ -185,7 +185,7 @@ class FIPEAPIScraper:
                             # Only speed up after many successes and if delay is above minimum
                             if self.consecutive_successes >= self.speedup_threshold and self.adaptive_delay > self.min_delay:
                                 old_delay = self.adaptive_delay
-                                self.adaptive_delay = max(self.min_delay, self.adaptive_delay * 0.95)  # Reduce by 5% (was 10%)
+                                self.adaptive_delay = max(self.min_delay, self.adaptive_delay * 0.98)  # Reduce by 2% (was 5%)
                                 self.consecutive_successes = 0
                                 logger.info(f"Speeding up: reduced delay from {old_delay:.3f}s to {self.adaptive_delay:.3f}s")
 
