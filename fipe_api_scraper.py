@@ -526,6 +526,9 @@ class FIPEAPIScraper:
     async def get_model_years(self, session: aiohttp.ClientSession,
                               month_code: int, brand_code: str, model_code: int) -> List[Dict]:
         """Get all available years for a specific model."""
+        # Extra delay specifically for this endpoint (which gets rate limited most)
+        await asyncio.sleep(0.2)  # Add 200ms extra delay before this call
+
         data = {
             'codigoTabelaReferencia': month_code,
             'codigoTipoVeiculo': VEHICLE_TYPE_CAR,
