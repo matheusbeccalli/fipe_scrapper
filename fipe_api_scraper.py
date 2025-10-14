@@ -59,7 +59,7 @@ class FIPEAPIScraper:
 
         Args:
             max_concurrent_requests: Maximum number of concurrent API requests
-                                    (default 2 for stable operation)
+                                    (default 1 for stable operation)
         """
         # Setup logging
         logger.add(
@@ -86,7 +86,7 @@ class FIPEAPIScraper:
         # Adaptive rate limiting (more conservative thresholds)
         self.adaptive_delay = 0.3  # Start with 300ms
         self.min_delay = 0.15  # Don't go below 150ms
-        self.max_delay = 1.0  # Cap at 1 second
+        self.max_delay = 2.0  # Cap at 2 seconds
         self.error_threshold = 3  # Number of 520 errors before backing off
         self.rate_limit_threshold = 2  # Number of 429 errors before backing off
         self.recent_520_errors = 0
