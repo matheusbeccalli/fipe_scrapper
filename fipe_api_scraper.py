@@ -53,7 +53,7 @@ class FIPEAPIScraper:
     hundreds of concurrent API calls for dramatically faster scraping.
     """
 
-    def __init__(self, max_concurrent_requests: int = 2):
+    def __init__(self, max_concurrent_requests: int = 1):
         """
         Initialize the API scraper.
 
@@ -671,10 +671,10 @@ class FIPEAPIScraper:
 
 async def main():
     """Main entry point."""
-    # Optimized concurrency settings for faster scraping
-    # 10 concurrent requests with 0.2s delay provides good balance
-    # Can adjust based on server response (reduce if getting 429 errors)
-    scraper = FIPEAPIScraper(max_concurrent_requests=10)
+    # Conservative settings to avoid rate limiting
+    # 1 concurrent request with adaptive delay (0.3s - 1.0s)
+    # FIPE API is very strict with rate limits
+    scraper = FIPEAPIScraper(max_concurrent_requests=1)
     await scraper.scrape_all_data()
 
 
