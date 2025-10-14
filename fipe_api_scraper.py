@@ -53,13 +53,13 @@ class FIPEAPIScraper:
     hundreds of concurrent API calls for dramatically faster scraping.
     """
 
-    def __init__(self, max_concurrent_requests: int = 3):
+    def __init__(self, max_concurrent_requests: int = 10):
         """
         Initialize the API scraper.
 
         Args:
             max_concurrent_requests: Maximum number of concurrent API requests
-                                    (default 3 to avoid rate limiting)
+                                    (default 10 for optimal performance)
         """
         # Setup logging
         logger.add(
@@ -75,12 +75,12 @@ class FIPEAPIScraper:
 
         # Concurrency control
         self.semaphore = asyncio.Semaphore(max_concurrent_requests)
-        self.request_delay = 0.5  # 500ms between requests (more conservative)
+        self.request_delay = 0.2  # 200ms between requests for better throughput
 
         # Retry configuration
-        self.max_retries = 5
+        self.max_retries = 3
         self.backoff_multiplier = 2.0  # Double wait time on each retry
-        self.rate_limit_pause = 5.0  # Seconds to pause when hitting rate limits
+        self.rate_limit_pause = 3.0  # Seconds to pause when hitting rate limits
 
         # Statistics
         self.stats = {
@@ -96,8 +96,13 @@ class FIPEAPIScraper:
         # Checkpoint system
         self.checkpoint = self._load_checkpoint()
 
+        # Database batch buffer
+        self.db_batch = []
+        self.batch_size = 100  # Save every 100 records
+
         logger.info(f"Scraper initialized with max {max_concurrent_requests} concurrent requests")
         logger.info(f"Rate limiting: {self.request_delay}s delay, {self.max_retries} retries")
+        logger.info(f"Database batching: {self.batch_size} records per commit")
 
     def _load_checkpoint(self) -> Dict:
         """Load scraping progress from checkpoint file."""
@@ -136,9 +141,13 @@ class FIPEAPIScraper:
                 try:
                     self.stats['total_requests'] += 1
 
-                    # Add delay for polite scraping (increases with retries)
-                    delay = self.request_delay * (self.backoff_multiplier ** attempt)
-                    await asyncio.sleep(delay)
+                    # Add delay only on retries (not on first attempt)
+                    if attempt > 0:
+                        delay = self.request_delay * (self.backoff_multiplier ** attempt)
+                        await asyncio.sleep(delay)
+                    else:
+                        # Small delay on first attempt to avoid overwhelming the server
+                        await asyncio.sleep(self.request_delay)
 
                     async with session.post(url, data=data, headers=HEADERS) as response:
                         if response.status == 200:
@@ -270,93 +279,152 @@ class FIPEAPIScraper:
         price_text = price_text.replace('.', '').replace(',', '.')
         return float(price_text)
 
-    def _save_to_database(self, month_data: Dict, brand_data: Dict,
-                         model_data: Dict, year_data: Dict, price_data: Dict):
-        """Save scraped data to database (synchronous operation)."""
+    def _batch_save_to_database(self, month_data: Dict, brand_data: Dict,
+                                model_data: Dict, year_data: Dict, price_data: Dict):
+        """Add data to batch buffer for bulk saving."""
+        # Add to batch
+        self.db_batch.append({
+            'month': month_data,
+            'brand': brand_data,
+            'model': model_data,
+            'year': year_data,
+            'price': price_data
+        })
+
+        # If batch is full, flush to database
+        if len(self.db_batch) >= self.batch_size:
+            self._flush_database_batch()
+
+    def _flush_database_batch(self):
+        """Flush accumulated data to database in bulk."""
+        if not self.db_batch:
+            return
+
         db_session = self.SessionMaker()
 
         try:
-            # Save or get reference month
-            month_date = self._parse_month_string(month_data['Mes'])
-            db_month = db_session.query(ReferenceMonth).filter_by(
-                month_code=str(month_data['Codigo'])
-            ).first()
+            # Cache lookups to avoid repeated queries
+            month_cache = {}
+            brand_cache = {}
+            model_cache = {}
+            year_cache = {}
 
-            if not db_month:
-                db_month = ReferenceMonth(
-                    month_code=str(month_data['Codigo']),
-                    month_date=month_date.date()
+            for item in self.db_batch:
+                month_data = item['month']
+                brand_data = item['brand']
+                model_data = item['model']
+                year_data = item['year']
+                price_data = item['price']
+
+                # Get or create reference month
+                month_code = str(month_data['Codigo'])
+                if month_code not in month_cache:
+                    db_month = db_session.query(ReferenceMonth).filter_by(
+                        month_code=month_code
+                    ).first()
+
+                    if not db_month:
+                        month_date = self._parse_month_string(month_data['Mes'])
+                        db_month = ReferenceMonth(
+                            month_code=month_code,
+                            month_date=month_date.date()
+                        )
+                        db_session.add(db_month)
+                        db_session.flush()  # Get ID without committing
+
+                    month_cache[month_code] = db_month
+                else:
+                    db_month = month_cache[month_code]
+
+                # Get or create brand
+                brand_code = brand_data['Value']
+                if brand_code not in brand_cache:
+                    db_brand = db_session.query(Brand).filter_by(
+                        brand_code=brand_code
+                    ).first()
+
+                    if not db_brand:
+                        db_brand = Brand(
+                            brand_code=brand_code,
+                            brand_name=brand_data['Label']
+                        )
+                        db_session.add(db_brand)
+                        db_session.flush()
+
+                    brand_cache[brand_code] = db_brand
+                else:
+                    db_brand = brand_cache[brand_code]
+
+                # Get or create car model
+                model_key = f"{db_brand.id}_{model_data['Value']}"
+                if model_key not in model_cache:
+                    db_model = db_session.query(CarModel).filter_by(
+                        brand_id=db_brand.id,
+                        model_code=str(model_data['Value'])
+                    ).first()
+
+                    if not db_model:
+                        db_model = CarModel(
+                            brand_id=db_brand.id,
+                            model_code=str(model_data['Value']),
+                            model_name=model_data['Label']
+                        )
+                        db_session.add(db_model)
+                        db_session.flush()
+
+                    model_cache[model_key] = db_model
+                else:
+                    db_model = model_cache[model_key]
+
+                # Get or create model year
+                year_key = f"{db_model.id}_{year_data['Value']}"
+                if year_key not in year_cache:
+                    db_year = db_session.query(ModelYear).filter_by(
+                        car_model_id=db_model.id,
+                        year_code=year_data['Value']
+                    ).first()
+
+                    if not db_year:
+                        db_year = ModelYear(
+                            car_model_id=db_model.id,
+                            year_code=year_data['Value'],
+                            year_description=year_data['Label']
+                        )
+                        db_session.add(db_year)
+                        db_session.flush()
+
+                    year_cache[year_key] = db_year
+                else:
+                    db_year = year_cache[year_key]
+
+                # Create price record
+                price = self._clean_price(price_data['Valor'])
+                car_price = CarPrice(
+                    reference_month_id=db_month.id,
+                    model_year_id=db_year.id,
+                    price=price,
+                    fipe_code=price_data.get('CodigoFipe')
                 )
-                db_session.add(db_month)
-                db_session.commit()
+                db_session.add(car_price)
 
-            # Save or get brand
-            db_brand = db_session.query(Brand).filter_by(
-                brand_code=brand_data['Value']
-            ).first()
-
-            if not db_brand:
-                db_brand = Brand(
-                    brand_code=brand_data['Value'],
-                    brand_name=brand_data['Label']
-                )
-                db_session.add(db_brand)
-                db_session.commit()
-
-            # Save or get car model
-            db_model = db_session.query(CarModel).filter_by(
-                brand_id=db_brand.id,
-                model_code=str(model_data['Value'])
-            ).first()
-
-            if not db_model:
-                db_model = CarModel(
-                    brand_id=db_brand.id,
-                    model_code=str(model_data['Value']),
-                    model_name=model_data['Label']
-                )
-                db_session.add(db_model)
-                db_session.commit()
-
-            # Save or get model year
-            db_year = db_session.query(ModelYear).filter_by(
-                car_model_id=db_model.id,
-                year_code=year_data['Value']
-            ).first()
-
-            if not db_year:
-                db_year = ModelYear(
-                    car_model_id=db_model.id,
-                    year_code=year_data['Value'],
-                    year_description=year_data['Label']
-                )
-                db_session.add(db_year)
-                db_session.commit()
-
-            # Save price
-            price = self._clean_price(price_data['Valor'])
-            car_price = CarPrice(
-                reference_month_id=db_month.id,
-                model_year_id=db_year.id,
-                price=price,
-                fipe_code=price_data.get('CodigoFipe')
-            )
-            db_session.add(car_price)
+            # Commit all changes at once
             db_session.commit()
+            self.stats['prices_saved'] += len(self.db_batch)
+            logger.debug(f"Flushed {len(self.db_batch)} records to database")
 
-            self.stats['prices_saved'] += 1
-
-        except IntegrityError:
+        except IntegrityError as e:
             db_session.rollback()
-            logger.debug("Price already exists, skipping")
+            logger.debug(f"Some prices already exist, skipping batch: {e}")
         except Exception as e:
             db_session.rollback()
-            logger.error(f"Database error: {e}")
+            logger.error(f"Database error during batch save: {e}")
         finally:
             db_session.close()
+            self.db_batch = []  # Clear batch
 
-    async def scrape_model(self, session: aiohttp.ClientSession,
-                          month_data: Dict, brand_data: Dict, model_data: Dict):
+    async def scrape_model_years(self, session: aiohttp.ClientSession,
+                                 month_data: Dict, brand_data: Dict, model_data: Dict,
+                                 years: List[Dict]):
         """Scrape all years for a specific model."""
         month_code = month_data['Codigo']
         brand_code = brand_data['Value']
@@ -366,15 +434,13 @@ class FIPEAPIScraper:
         checkpoint_key = f"{month_code}_{brand_code}_{model_code}"
         if checkpoint_key in self.checkpoint:
             logger.debug(f"Skipping already scraped: {model_data['Label']}")
-            return
-
-        # Get model details (includes years)
-        model_details = await self.get_models(session, month_code, brand_code)
-        years = model_details.get('Anos', [])
+            return 0
 
         if not years:
             logger.warning(f"No years found for {model_data['Label']}")
-            return
+            return 0
+
+        prices_collected = 0
 
         # Scrape price for each year
         for year_data in years:
@@ -392,17 +458,17 @@ class FIPEAPIScraper:
             )
 
             if price_data and 'Valor' in price_data:
-                # Save to database
-                self._save_to_database(
+                # Add to batch for bulk save (auto-flushes at batch_size)
+                self._batch_save_to_database(
                     month_data, brand_data, model_data, year_data, price_data
                 )
+                prices_collected += 1
                 logger.debug(f"✓ {model_data['Label']} {year_data['Label']}: {price_data['Valor']}")
 
-        # Save checkpoint
-        self.checkpoint[checkpoint_key] = True
-        self._save_checkpoint(self.checkpoint)
-
+        # NOTE: Don't save checkpoint yet - batch might not be flushed
+        # Checkpoint will be saved after explicit flush in scrape_all_data()
         logger.success(f"✓ Completed model: {model_data['Label']} ({len(years)} years)")
+        return prices_collected
 
     async def scrape_all_data(self):
         """Main scraping method - orchestrates the entire process."""
@@ -429,19 +495,30 @@ class FIPEAPIScraper:
                 for brand_idx, brand in enumerate(brands):
                     logger.info(f"Processing brand {brand_idx + 1}/{len(brands)}: {brand['Label']}")
 
-                    # Get all models for this brand
+                    # Get all models for this brand (this includes years in response!)
                     models_response = await self.get_models(session, month['Codigo'], brand['Value'])
                     models = models_response.get('Modelos', [])
+                    years = models_response.get('Anos', [])  # All years for the brand
                     logger.info(f"Found {len(models)} models")
 
                     # Create tasks for all models (concurrent scraping!)
+                    # Pass the years data to avoid redundant API call
                     tasks = [
-                        self.scrape_model(session, month, brand, model)
+                        self.scrape_model_years(session, month, brand, model, years)
                         for model in models
                     ]
 
                     # Execute all model scraping concurrently
                     await asyncio.gather(*tasks)
+
+                    # Flush remaining batch data to database
+                    self._flush_database_batch()
+
+                    # Save checkpoint for all models in this brand
+                    for model in models:
+                        checkpoint_key = f"{month['Codigo']}_{brand['Value']}_{model['Value']}"
+                        self.checkpoint[checkpoint_key] = True
+                    self._save_checkpoint(self.checkpoint)
 
                     logger.success(f"✓✓ Completed brand: {brand['Label']}")
 
@@ -474,10 +551,10 @@ class FIPEAPIScraper:
 
 async def main():
     """Main entry point."""
-    # Use conservative concurrency to avoid rate limiting
-    # 3 concurrent requests with 0.5s delay works well
-    # Can increase to 5 if you want faster scraping (with more 429 retries)
-    scraper = FIPEAPIScraper(max_concurrent_requests=3)
+    # Optimized concurrency settings for faster scraping
+    # 10 concurrent requests with 0.2s delay provides good balance
+    # Can adjust based on server response (reduce if getting 429 errors)
+    scraper = FIPEAPIScraper(max_concurrent_requests=10)
     await scraper.scrape_all_data()
 
 
