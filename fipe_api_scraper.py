@@ -429,7 +429,8 @@ class FIPEAPIScraper:
 
             db_session.flush()  # Get IDs for years
 
-            # Now create all price records
+            # Check which prices already exist to avoid duplicates
+            month_year_pairs = []
             for item in self.db_batch:
                 month = month_cache[str(item['month']['Codigo'])]
                 brand = brand_cache[item['brand']['Value']]
@@ -437,6 +438,32 @@ class FIPEAPIScraper:
                 model = model_cache[model_key]
                 year_key = f"{model.id}_{item['year']['Value']}"
                 year = year_cache[year_key]
+                month_year_pairs.append((month.id, year.id))
+
+            # Bulk check for existing prices
+            from sqlalchemy import tuple_
+            existing_prices = db_session.query(
+                CarPrice.reference_month_id,
+                CarPrice.model_year_id
+            ).filter(
+                tuple_(CarPrice.reference_month_id, CarPrice.model_year_id).in_(month_year_pairs)
+            ).all()
+
+            existing_set = set(existing_prices)
+
+            # Now create only non-duplicate price records
+            new_prices = 0
+            for item in self.db_batch:
+                month = month_cache[str(item['month']['Codigo'])]
+                brand = brand_cache[item['brand']['Value']]
+                model_key = f"{brand.id}_{item['model']['Value']}"
+                model = model_cache[model_key]
+                year_key = f"{model.id}_{item['year']['Value']}"
+                year = year_cache[year_key]
+
+                # Skip if already exists
+                if (month.id, year.id) in existing_set:
+                    continue
 
                 price = self._clean_price(item['price']['Valor'])
                 car_price = CarPrice(
@@ -446,11 +473,14 @@ class FIPEAPIScraper:
                     fipe_code=item['price'].get('CodigoFipe')
                 )
                 db_session.add(car_price)
+                new_prices += 1
 
             # Commit all changes at once
             db_session.commit()
-            self.stats['prices_saved'] += len(self.db_batch)
-            logger.debug(f"Flushed {len(self.db_batch)} records to database")
+            self.stats['prices_saved'] += new_prices
+            skipped = len(self.db_batch) - new_prices
+            if new_prices > 0:
+                logger.debug(f"Flushed {new_prices} new records to database (skipped {skipped} duplicates)")
 
         except IntegrityError as e:
             db_session.rollback()
