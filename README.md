@@ -204,15 +204,6 @@ The FIPE API implements rate limiting (HTTP 429 errors). The scraper handles thi
 - Consider running during off-peak hours for large scrapes
 - Don't run multiple instances simultaneously
 
-### Time Estimate
-
-With default settings:
-- **1 month**: ~10 minutes
-- **12 months**: ~2 hours
-- **All 298 months**: ~50 hours (2 days)
-
-**Recommendation**: Start with 1-2 months to test (set in `.env` file).
-
 ## 🔄 Resuming Interrupted Scrapes
 
 If the scraper is interrupted:
