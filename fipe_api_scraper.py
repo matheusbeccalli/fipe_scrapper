@@ -78,7 +78,7 @@ class FIPEAPIScraper:
         self.request_delay = 0.5  # 500ms between requests (more conservative)
 
         # Retry configuration
-        self.max_retries = 3
+        self.max_retries = 5
         self.backoff_multiplier = 2.0  # Double wait time on each retry
         self.rate_limit_pause = 5.0  # Seconds to pause when hitting rate limits
 
