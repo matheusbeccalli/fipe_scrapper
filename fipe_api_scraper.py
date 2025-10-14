@@ -59,7 +59,7 @@ class FIPEAPIScraper:
 
         Args:
             max_concurrent_requests: Maximum number of concurrent API requests
-                                    (default 10 for optimal performance)
+                                    (default 2 for stable operation)
         """
         # Setup logging
         logger.add(
@@ -75,19 +75,24 @@ class FIPEAPIScraper:
 
         # Concurrency control
         self.semaphore = asyncio.Semaphore(max_concurrent_requests)
-        self.request_delay = 0.1  # 100ms between requests
+        self.request_delay = 0.3  # 300ms between requests (more conservative)
         self.max_concurrent_requests = max_concurrent_requests
 
         # Retry configuration
         self.max_retries = 5
         self.backoff_multiplier = 2.0  # Double wait time on each retry
-        self.rate_limit_pause = 3.0  # Seconds to pause when hitting rate limits
+        self.rate_limit_pause = 5.0  # Longer pause on rate limits
 
-        # Adaptive rate limiting
-        self.adaptive_delay = 0.1  # Start with 100ms, adjust based on errors
+        # Adaptive rate limiting (more conservative thresholds)
+        self.adaptive_delay = 0.3  # Start with 300ms
+        self.min_delay = 0.15  # Don't go below 150ms
+        self.max_delay = 1.0  # Cap at 1 second
         self.error_threshold = 3  # Number of 520 errors before backing off
+        self.rate_limit_threshold = 2  # Number of 429 errors before backing off
         self.recent_520_errors = 0
+        self.recent_429_errors = 0
         self.consecutive_successes = 0
+        self.speedup_threshold = 50  # Need 50 successes before speeding up (was 20)
 
         # Statistics
         self.stats = {
@@ -160,20 +165,31 @@ class FIPEAPIScraper:
                         if response.status == 200:
                             self.stats['successful_requests'] += 1
 
-                            # Adaptive: reduce delay on consecutive successes
+                            # Adaptive: reduce delay on consecutive successes (very slowly)
                             self.consecutive_successes += 1
                             self.recent_520_errors = max(0, self.recent_520_errors - 1)
+                            self.recent_429_errors = max(0, self.recent_429_errors - 1)
 
-                            if self.consecutive_successes >= 20 and self.adaptive_delay > 0.05:
-                                self.adaptive_delay = max(0.05, self.adaptive_delay * 0.9)
+                            # Only speed up after many successes and if delay is above minimum
+                            if self.consecutive_successes >= self.speedup_threshold and self.adaptive_delay > self.min_delay:
+                                old_delay = self.adaptive_delay
+                                self.adaptive_delay = max(self.min_delay, self.adaptive_delay * 0.95)  # Reduce by 5% (was 10%)
                                 self.consecutive_successes = 0
-                                logger.debug(f"Reduced adaptive delay to {self.adaptive_delay:.3f}s")
+                                logger.info(f"Speeding up: reduced delay from {old_delay:.3f}s to {self.adaptive_delay:.3f}s")
 
                             return await response.json()
 
                         elif response.status == 429:  # Rate limited
                             self.stats['rate_limit_hits'] += 1
                             self.consecutive_successes = 0
+                            self.recent_429_errors += 1
+
+                            # Adaptive: back off on rate limit errors
+                            if self.recent_429_errors >= self.rate_limit_threshold:
+                                old_delay = self.adaptive_delay
+                                self.adaptive_delay = min(self.max_delay, self.adaptive_delay * 1.5)
+                                logger.warning(f"Rate limited (429), increased delay from {old_delay:.3f}s to {self.adaptive_delay:.3f}s")
+                                self.recent_429_errors = 0
 
                             if attempt < self.max_retries:
                                 self.stats['retries'] += 1
