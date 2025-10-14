@@ -182,6 +182,9 @@ class FIPEAPIScraper:
                             self.recent_520_errors = max(0, self.recent_520_errors - 1)
                             self.recent_429_errors = max(0, self.recent_429_errors - 1)
 
+                            # Log success with pattern tracking info
+                            logger.debug(f"SUCCESS on {request_desc} (consecutive: {self.consecutive_successes}, delay: {self.adaptive_delay:.3f}s)")
+
                             # Only speed up after many successes and if delay is above minimum
                             if self.consecutive_successes >= self.speedup_threshold and self.adaptive_delay > self.min_delay:
                                 old_delay = self.adaptive_delay
