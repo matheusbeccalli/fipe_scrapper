@@ -148,6 +148,18 @@ class FIPEAPIScraper:
         """
         url = f"{API_BASE_URL}{endpoint}"
 
+        # Create a short description of the request for logging
+        request_desc = endpoint
+        if data:
+            if 'codigoMarca' in data:
+                request_desc += f" [brand={data['codigoMarca']}"
+            if 'codigoModelo' in data:
+                request_desc += f", model={data['codigoModelo']}"
+            if 'anoModelo' in data:
+                request_desc += f", year={data['anoModelo']}"
+            if data and ('codigoMarca' in data or 'codigoModelo' in data or 'anoModelo' in data):
+                request_desc += "]"
+
         async with self.semaphore:  # Rate limiting
             for attempt in range(self.max_retries + 1):
                 try:
@@ -188,17 +200,17 @@ class FIPEAPIScraper:
                             if self.recent_429_errors >= self.rate_limit_threshold:
                                 old_delay = self.adaptive_delay
                                 self.adaptive_delay = min(self.max_delay, self.adaptive_delay * 1.5)
-                                logger.warning(f"Rate limited (429), increased delay from {old_delay:.3f}s to {self.adaptive_delay:.3f}s")
+                                logger.warning(f"Rate limited (429) on {request_desc}, increased delay from {old_delay:.3f}s to {self.adaptive_delay:.3f}s")
                                 self.recent_429_errors = 0
 
                             if attempt < self.max_retries:
                                 self.stats['retries'] += 1
                                 wait_time = self.rate_limit_pause * (self.backoff_multiplier ** attempt)
-                                logger.debug(f"Rate limited (429), retrying in {wait_time:.1f}s (attempt {attempt + 1}/{self.max_retries})")
+                                logger.debug(f"Rate limited (429) on {request_desc}, retrying in {wait_time:.1f}s (attempt {attempt + 1}/{self.max_retries})")
                                 await asyncio.sleep(wait_time)
                                 continue
                             else:
-                                logger.warning(f"Rate limit exceeded, max retries reached: {url}")
+                                logger.warning(f"Rate limit (429) exceeded for {request_desc}, max retries reached")
                                 self.stats['failed_requests'] += 1
                                 return None
 
@@ -209,28 +221,28 @@ class FIPEAPIScraper:
                             # Adaptive: back off on 520 errors
                             if self.recent_520_errors >= self.error_threshold:
                                 old_delay = self.adaptive_delay
-                                self.adaptive_delay = min(0.5, self.adaptive_delay * 1.5)
-                                logger.warning(f"Server overload (520), increased delay from {old_delay:.3f}s to {self.adaptive_delay:.3f}s")
+                                self.adaptive_delay = min(self.max_delay, self.adaptive_delay * 1.5)
+                                logger.warning(f"Server overload (520) on {request_desc}, increased delay from {old_delay:.3f}s to {self.adaptive_delay:.3f}s")
                                 self.recent_520_errors = 0
 
                             if attempt < self.max_retries:
                                 self.stats['retries'] += 1
                                 wait_time = 2.0 * (self.backoff_multiplier ** attempt)
-                                logger.debug(f"Server overload (520), retrying in {wait_time:.1f}s (attempt {attempt + 1}/{self.max_retries})")
+                                logger.debug(f"Server overload (520) on {request_desc}, retrying in {wait_time:.1f}s (attempt {attempt + 1}/{self.max_retries})")
                                 await asyncio.sleep(wait_time)
                                 continue
                             else:
-                                logger.warning(f"Server overload, max retries reached: {url}")
+                                logger.warning(f"Server overload (520) for {request_desc}, max retries reached")
                                 self.stats['failed_requests'] += 1
                                 return None
 
                         else:
-                            logger.warning(f"Request failed with status {response.status}: {url}")
+                            logger.warning(f"Request failed with status {response.status} for {request_desc}")
                             self.stats['failed_requests'] += 1
                             return None
 
                 except Exception as e:
-                    logger.error(f"Error making request to {url}: {e}")
+                    logger.error(f"Error making request to {request_desc}: {e}")
                     self.stats['failed_requests'] += 1
                     return None
 
