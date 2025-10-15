@@ -660,12 +660,12 @@ class FIPEAPIScraper:
         logger.info("=" * 80)
         logger.info("SCRAPING STATISTICS")
         logger.info("=" * 80)
-        logger.info(f"Total requests: {self.stats['total_requests']}")
-        logger.info(f"Successful requests: {self.stats['successful_requests']}")
-        logger.info(f"Failed requests: {self.stats['failed_requests']}")
-        logger.info(f"Rate limit hits (429): {self.stats['rate_limit_hits']}")
-        logger.info(f"Successful retries: {self.stats['retries']}")
-        logger.info(f"Prices saved: {self.stats['prices_saved']}")
+        logger.info(f"Total requests: {self.stats['total_requests']:,}")
+        logger.info(f"Successful requests: {self.stats['successful_requests']:,}")
+        logger.info(f"Failed requests: {self.stats['failed_requests']:,}")
+        logger.info(f"Rate limit hits (429): {self.stats['rate_limit_hits']:,}")
+        logger.info(f"Successful retries: {self.stats['retries']:,}")
+        logger.info(f"Prices saved: {self.stats['prices_saved']:,}")
         logger.info(f"Time elapsed: {elapsed_time:.2f} seconds ({elapsed_time/60:.2f} minutes)")
 
         if elapsed_time > 0:
@@ -673,6 +673,62 @@ class FIPEAPIScraper:
             logger.info(f"Success rate: {self.stats['successful_requests']/self.stats['total_requests']*100:.1f}%")
 
         logger.info("=" * 80)
+
+        # Print database statistics
+        self._print_database_statistics()
+
+    def _print_database_statistics(self):
+        """Print comprehensive database statistics after scraping."""
+        db_session = self.SessionMaker()
+
+        try:
+            logger.info("")
+            logger.info("=" * 80)
+            logger.info("DATABASE STATISTICS")
+            logger.info("=" * 80)
+
+            # Count records in each table
+            months_count = db_session.query(ReferenceMonth).count()
+            brands_count = db_session.query(Brand).count()
+            models_count = db_session.query(CarModel).count()
+            years_count = db_session.query(ModelYear).count()
+            prices_count = db_session.query(CarPrice).count()
+
+            logger.info(f"Reference Months: {months_count:,}")
+            logger.info(f"Brands: {brands_count:,}")
+            logger.info(f"Car Models: {models_count:,}")
+            logger.info(f"Model Years (year/fuel combinations): {years_count:,}")
+            logger.info(f"Total Price Records: {prices_count:,}")
+
+            # Get date range
+            oldest_month = db_session.query(ReferenceMonth).order_by(ReferenceMonth.month_date).first()
+            newest_month = db_session.query(ReferenceMonth).order_by(ReferenceMonth.month_date.desc()).first()
+
+            if oldest_month and newest_month:
+                logger.info(f"Date Range: {oldest_month.month_date} to {newest_month.month_date}")
+
+            # Get top brands by number of models
+            from sqlalchemy import func
+            top_brands = db_session.query(
+                Brand.brand_name,
+                func.count(CarModel.id).label('model_count')
+            ).join(CarModel).group_by(Brand.brand_name).order_by(
+                func.count(CarModel.id).desc()
+            ).limit(5).all()
+
+            if top_brands:
+                logger.info("")
+                logger.info("Top 5 Brands by Model Count:")
+                for idx, (brand_name, model_count) in enumerate(top_brands, 1):
+                    logger.info(f"  {idx}. {brand_name}: {model_count:,} models")
+
+            logger.info("=" * 80)
+            logger.info("")
+
+        except Exception as e:
+            logger.error(f"Error printing database statistics: {e}")
+        finally:
+            db_session.close()
 
 
 async def main():
