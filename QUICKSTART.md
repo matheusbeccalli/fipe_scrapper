@@ -1,6 +1,6 @@
 # Quick Start Guide - FIPE Scraper
 
-Get up and running in 5 minutes! 🚀
+Get up and running in 5 minutes!
 
 ## Step 1: Setup
 
@@ -21,7 +21,7 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-**Note:** If you're using Python 3.13+, the installation will automatically use the latest compatible versions with pre-built wheels. No C compiler needed!
+**Note:** This scraper uses direct API calls (no browser required). Installation is fast and lightweight.
 
 ## Step 2: Create Database
 
@@ -31,28 +31,34 @@ python database_models.py
 
 You should see: "Database created successfully!"
 
-## Step 3: Test Run (Optional)
+## Step 3: Configure Date Range (Optional)
 
-Before running a full scrape, test with a small sample:
+To test or limit scraping to specific months, create a `.env` file:
 
-Edit `config.py` and change:
-```python
-SELENIUM_CONFIG = {
-    'headless': False,  # See the browser
-}
+```bash
+# Copy example config
+cp .env.example .env
+
+# Edit .env and set:
+SCRAPE_START_DATE=2024-01
+SCRAPE_END_DATE=2024-12
 ```
+
+Leave these blank to scrape ALL available months (2001-present).
 
 ## Step 4: Run Scraper
 
 ```bash
-python fipe_scraper.py
+# Run the API-based scraper (recommended - fast!)
+python fipe_api_scraper.py
 ```
 
-**Warning**: Full scrape takes MANY hours! The scraper will:
-- Loop through ALL months (2001-present)
+**Performance**: API-based scraping is 50-100x faster than browser-based approaches. The scraper will:
+- Loop through ALL months (2001-present, or your configured range)
 - Loop through ALL brands (50+)
 - Loop through ALL models (thousands)
 - Loop through ALL years
+- Use adaptive rate limiting to avoid API throttling
 
 If interrupted, just restart - it resumes automatically!
 
@@ -82,14 +88,15 @@ python example_usage.py
 - The requirements.txt now uses `>=` to allow newer compatible versions
 - Python 3.13+ users: pre-built wheels install automatically
 
-**Browser not opening?**
-- Make sure Chrome is installed
-- Try `headless: False` to see what's happening
+**Getting rate limited (429 errors)?**
+- The scraper uses adaptive rate limiting automatically
+- Start with a small date range to test (e.g., one month)
+- Check logs in `fipe_scraper.log` for patterns
 
-**Taking too long?**
-- This is normal! Full scrape = days
-- Start with recent months only
-- Check logs in `fipe_scraper.log`
+**Still too slow?**
+- Already using the fastest method (direct API calls)
+- Limit date range in `.env` to scrape only recent months
+- Full historical scrape (250+ months) will take time even with API
 
 **Need to stop?**
 - Press `Ctrl+C`
@@ -100,12 +107,13 @@ python example_usage.py
 
 | File | Purpose |
 |------|---------|
-| `fipe_scraper.py` | Main scraper (START HERE) |
+| `fipe_api_scraper.py` | **Main scraper - START HERE** (uses direct API calls) |
 | `config.py` | All settings |
 | `database_models.py` | Database structure |
 | `utils.py` | Export & analyze data |
 | `example_usage.py` | Code examples |
 | `fipe_data.db` | Your database (created automatically) |
+| `.env` | Optional configuration (copy from `.env.example`) |
 
 ## What's Being Scraped?
 
@@ -139,18 +147,19 @@ The scraper saves:
 ## Working with Claude
 
 Tell Claude what you want to do:
-- "Fix this error in fipe_scraper.py"
+- "Fix this error in fipe_api_scraper.py"
 - "Add a function to export only 2024 data"
 - "Create a chart showing price trends"
-- "Make the scraper faster"
+- "Optimize the rate limiting strategy"
 - "Add email notifications when scraping completes"
 
 Claude can help you extend and customize the scraper!
 
 ---
 
-**Remember**: 
-- Be patient (full scrape = very slow)
-- Progress auto-saves
-- Start small, scale up
-- Check logs frequently
+**Remember**:
+- API-based scraper is already optimized for speed
+- Progress auto-saves automatically
+- Start with a small date range to test
+- Check logs frequently (`fipe_scraper.log`)
+- Full historical scrape = hours (not days like browser-based)

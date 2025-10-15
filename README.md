@@ -2,18 +2,10 @@
 
 A Python web scraper that collects historical car price data from the FIPE (Fundação Instituto de Pesquisas Econômicas) table, Brazil's vehicle price reference.
 
-## 🎉 Ultra-Fast API-Based Scraper (160x Faster!)
+## 🎉 Ultra-Fast API-Based Scraper
 
 This scraper uses the FIPE REST API directly for **dramatically faster** scraping compared to traditional browser automation.
 
-### Performance Comparison
-
-| Metric | Browser (Old) | API (Current) | Improvement |
-|--------|---------------|---------------|-------------|
-| **1 Month** | ~27 hours | ~10 minutes | **162x faster** |
-| **All 298 Months** | ~335 days | ~50 hours (2 days) | **161x faster** |
-| **Memory Usage** | ~500MB | ~50MB | **10x less** |
-| **Reliability** | Medium | High | **More stable** |
 
 ## 📋 What This Does
 
@@ -193,7 +185,7 @@ See `API_DOCUMENTATION.md` for complete endpoint details.
 ### Rate Limiting
 
 The FIPE API implements rate limiting (HTTP 429 errors). The scraper handles this automatically:
-- Default: 3 concurrent requests with 0.5s delay
+- Default: multiple concurrent requests with configurable delay
 - Automatic retry with exponential backoff (up to 5 attempts)
 - If rate limited, waits 5-10-20 seconds before retry
 
