@@ -15,6 +15,7 @@ import asyncio
 import aiohttp
 import json
 import time
+import platform
 from datetime import datetime
 from typing import List, Dict, Optional
 from loguru import logger
@@ -27,6 +28,15 @@ from database_models import (
     create_database, ReferenceMonth, Brand,
     CarModel, ModelYear, CarPrice
 )
+
+# Windows-specific imports for preventing auto-restart
+if platform.system() == 'Windows':
+    try:
+        import ctypes
+    except ImportError:
+        ctypes = None
+else:
+    ctypes = None
 
 
 # API Configuration
@@ -87,12 +97,12 @@ class FIPEAPIScraper:
         self.adaptive_delay = 0.5  # Start with 500ms (was 0.3s)
         self.min_delay = 0.4  # Don't go below 400ms (was 0.15s)
         self.max_delay = 2.0  # Cap at 2 seconds
-        self.error_threshold = 3  # Number of 520 errors before backing off
-        self.rate_limit_threshold = 2  # Number of 429 errors before backing off
+        self.error_threshold = 5  # Number of 520 errors before backing off
+        self.rate_limit_threshold = 5  # Number of 429 errors before backing off
         self.recent_520_errors = 0
         self.recent_429_errors = 0
         self.consecutive_successes = 0
-        self.speedup_threshold = 100  # Need 100 successes before speeding up (was 50)
+        self.speedup_threshold = 40  # Need 40 successes before speeding up
 
         # Statistics
         self.stats = {
@@ -132,6 +142,37 @@ class FIPEAPIScraper:
         if config.RESUME_CONFIG['enable_resume']:
             with open(config.RESUME_CONFIG['checkpoint_file'], 'w') as f:
                 json.dump(checkpoint_data, f, indent=2)
+
+    def _block_windows_shutdown(self, block: bool = True):
+        """
+        Prevent Windows from automatically restarting during scraping.
+        Only works on Windows. Shows a message to user if shutdown is attempted.
+
+        Args:
+            block: True to block shutdown, False to unblock
+        """
+        if platform.system() != 'Windows' or ctypes is None:
+            return
+
+        try:
+            if block:
+                # ShutdownBlockReasonCreate prevents automatic restarts
+                result = ctypes.windll.user32.ShutdownBlockReasonCreate(
+                    ctypes.windll.kernel32.GetConsoleWindow(),
+                    "FIPE scraper is running. Please wait for completion or press Ctrl+C to stop."
+                )
+                if result:
+                    logger.info("Windows shutdown blocker activated - system will not auto-restart")
+                else:
+                    logger.warning("Failed to activate Windows shutdown blocker")
+            else:
+                # ShutdownBlockReasonDestroy removes the block
+                ctypes.windll.user32.ShutdownBlockReasonDestroy(
+                    ctypes.windll.kernel32.GetConsoleWindow()
+                )
+                logger.info("Windows shutdown blocker deactivated")
+        except Exception as e:
+            logger.warning(f"Could not set Windows shutdown blocker: {e}")
 
     async def _make_request(self, session: aiohttp.ClientSession,
                            endpoint: str, data: Dict = None) -> Optional[Dict]:
@@ -527,7 +568,7 @@ class FIPEAPIScraper:
                               month_code: int, brand_code: str, model_code: int) -> List[Dict]:
         """Get all available years for a specific model."""
         # Extra delay specifically for this endpoint (which gets rate limited most)
-        await asyncio.sleep(0.2)  # Add 200ms extra delay before this call
+        await asyncio.sleep(0.3)  # Add 300ms extra delay before this call (causing most rate limits)
 
         data = {
             'codigoTabelaReferencia': month_code,
@@ -603,55 +644,63 @@ class FIPEAPIScraper:
         self.stats['start_time'] = time.time()
         logger.info("Starting API-based scraping...")
 
-        async with aiohttp.ClientSession() as session:
-            # Get all reference months
-            months = await self.get_reference_months(session)
+        # Block Windows from automatically restarting during scraping
+        self._block_windows_shutdown(block=True)
 
-            if not months:
-                logger.error("No months to scrape")
-                return
+        try:
+            async with aiohttp.ClientSession() as session:
+                # Get all reference months
+                months = await self.get_reference_months(session)
 
-            # Process each month
-            for month_idx, month in enumerate(months):
-                logger.info(f"Processing month {month_idx + 1}/{len(months)}: {month['Mes']}")
+                if not months:
+                    logger.error("No months to scrape")
+                    return
 
-                # Get all brands
-                brands = await self.get_brands(session, month['Codigo'])
-                logger.info(f"Found {len(brands)} brands")
+                # Process each month
+                for month_idx, month in enumerate(months):
+                    logger.info(f"Processing month {month_idx + 1}/{len(months)}: {month['Mes']}")
 
-                # Process each brand
-                for brand_idx, brand in enumerate(brands):
-                    logger.info(f"Processing brand {brand_idx + 1}/{len(brands)}: {brand['Label']}")
+                    # Get all brands
+                    brands = await self.get_brands(session, month['Codigo'])
+                    logger.info(f"Found {len(brands)} brands")
 
-                    # Get all models for this brand
-                    models_response = await self.get_models(session, month['Codigo'], brand['Value'])
-                    models = models_response.get('Modelos', [])
-                    logger.info(f"Found {len(models)} models")
+                    # Process each brand
+                    for brand_idx, brand in enumerate(brands):
+                        logger.info(f"Processing brand {brand_idx + 1}/{len(brands)}: {brand['Label']}")
 
-                    # Create tasks for all models (concurrent scraping!)
-                    tasks = [
-                        self.scrape_model_years(session, month, brand, model)
-                        for model in models
-                    ]
+                        # Get all models for this brand
+                        models_response = await self.get_models(session, month['Codigo'], brand['Value'])
+                        models = models_response.get('Modelos', [])
+                        logger.info(f"Found {len(models)} models")
 
-                    # Execute all model scraping concurrently
-                    await asyncio.gather(*tasks)
+                        # Create tasks for all models (concurrent scraping!)
+                        tasks = [
+                            self.scrape_model_years(session, month, brand, model)
+                            for model in models
+                        ]
 
-                    # Flush remaining batch data to database
-                    self._flush_database_batch()
+                        # Execute all model scraping concurrently
+                        await asyncio.gather(*tasks)
 
-                    # Save checkpoint for all models in this brand
-                    for model in models:
-                        checkpoint_key = f"{month['Codigo']}_{brand['Value']}_{model['Value']}"
-                        self.checkpoint[checkpoint_key] = True
-                    self._save_checkpoint(self.checkpoint)
+                        # Flush remaining batch data to database
+                        self._flush_database_batch()
 
-                    logger.success(f"✓✓ Completed brand: {brand['Label']}")
+                        # Save checkpoint for all models in this brand
+                        for model in models:
+                            checkpoint_key = f"{month['Codigo']}_{brand['Value']}_{model['Value']}"
+                            self.checkpoint[checkpoint_key] = True
+                        self._save_checkpoint(self.checkpoint)
 
-                logger.success(f"✓✓✓ Completed month: {month['Mes']}")
+                        logger.success(f"✓✓ Completed brand: {brand['Label']}")
 
-        self._print_statistics()
-        logger.info("Scraping completed successfully!")
+                    logger.success(f"✓✓✓ Completed month: {month['Mes']}")
+
+            self._print_statistics()
+            logger.info("Scraping completed successfully!")
+
+        finally:
+            # Always unblock shutdown when done (even if there's an error or interruption)
+            self._block_windows_shutdown(block=False)
 
     def _print_statistics(self):
         """Print scraping statistics."""
