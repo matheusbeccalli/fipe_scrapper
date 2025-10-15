@@ -6,6 +6,7 @@ A Python web scraper that collects historical car price data from the FIPE (Fund
 
 This scraper uses the FIPE REST API directly for **dramatically faster** scraping compared to traditional browser automation.
 
+Please note: the performance is currently limited by the FIPE server (rate limits) but in theory the scraper can be much faster.
 
 ## 📋 What This Does
 
