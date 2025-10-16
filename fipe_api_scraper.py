@@ -137,16 +137,16 @@ class FIPEAPIScraper:
         except FileNotFoundError:
             return {}
 
-    def _brand_has_data_for_months(self, brand_code: str, month_codes: List[str]) -> bool:
+    def _brand_has_data_for_month(self, brand_code: str, month_code: str) -> bool:
         """
-        Check if a brand already has price data for specific months.
+        Check if a brand already has price data for a specific month.
 
         Args:
             brand_code: FIPE brand code to check
-            month_codes: List of month codes to check for
+            month_code: Month code to check for
 
         Returns:
-            True if brand has data for ALL specified months, False otherwise
+            True if brand has data for the specified month, False otherwise
         """
         db_session = self.SessionMaker()
 
@@ -158,32 +158,30 @@ class FIPEAPIScraper:
                 logger.debug(f"Brand {brand_code} not found in database")
                 return False
 
-            # Get all months for which this brand has price data
-            from sqlalchemy import distinct
-            existing_month_ids = db_session.query(distinct(CarPrice.reference_month_id)).join(
+            # Get the reference month from database
+            target_month = db_session.query(ReferenceMonth).filter(
+                ReferenceMonth.month_code == month_code
+            ).first()
+
+            if not target_month:
+                logger.debug(f"Month {month_code} not found in database")
+                return False
+
+            # Check if this brand has any price data for this specific month
+            price_count = db_session.query(CarPrice).join(
                 ModelYear
             ).join(
                 CarModel
             ).filter(
-                CarModel.brand_id == brand.id
-            ).all()
+                CarModel.brand_id == brand.id,
+                CarPrice.reference_month_id == target_month.id
+            ).count()
 
-            existing_month_ids = {month_id[0] for month_id in existing_month_ids}
+            if price_count > 0:
+                logger.info(f"Brand {brand_code} already has {price_count} price records for month {month_code}")
+                return True
 
-            # Get month IDs for the codes we're checking
-            target_months = db_session.query(ReferenceMonth).filter(
-                ReferenceMonth.month_code.in_(month_codes)
-            ).all()
-
-            target_month_ids = {month.id for month in target_months}
-
-            # Brand has data if all target months are in existing months
-            has_all_data = target_month_ids.issubset(existing_month_ids)
-
-            if has_all_data:
-                logger.info(f"Brand {brand_code} already has data for all specified months")
-
-            return has_all_data
+            return False
 
         except Exception as e:
             logger.error(f"Error checking brand data: {e}")
@@ -710,9 +708,6 @@ class FIPEAPIScraper:
                     logger.error("No months to scrape")
                     return
 
-                # Extract month codes for brand filtering check
-                month_codes = [str(month['Codigo']) for month in months]
-
                 # Check if brand filtering is enabled
                 brand_filter_enabled = config.BRAND_FILTER.get('enabled', False)
                 brand_filter_codes = config.BRAND_FILTER.get('brand_codes')
@@ -733,6 +728,7 @@ class FIPEAPIScraper:
                 # Process each month
                 for month_idx, month in enumerate(months):
                     logger.info(f"Processing month {month_idx + 1}/{len(months)}: {month['Mes']}")
+                    month_code = str(month['Codigo'])
 
                     # Get all brands
                     brands = await self.get_brands(session, month['Codigo'])
@@ -746,9 +742,9 @@ class FIPEAPIScraper:
 
                     # Process each brand
                     for brand_idx, brand in enumerate(brands):
-                        # Check if brand already has complete data for all specified months
-                        if self._brand_has_data_for_months(brand['Value'], month_codes):
-                            logger.info(f"Skipping brand {brand_idx + 1}/{len(brands)}: {brand['Label']} (already has complete data)")
+                        # Check if brand already has data for THIS specific month
+                        if self._brand_has_data_for_month(brand['Value'], month_code):
+                            logger.info(f"Skipping brand {brand_idx + 1}/{len(brands)}: {brand['Label']} (already has data for this month)")
                             continue
 
                         logger.info(f"Processing brand {brand_idx + 1}/{len(brands)}: {brand['Label']}")
