@@ -138,7 +138,7 @@ By default, the scraper processes ALL available brands. To limit scraping to spe
 - Set `BRAND_FILTER_ENABLED=true` in `.env` or `config.py`
 - Set `BRAND_FILTER_CODES` to comma-separated brand codes (e.g., `6,59` for Audi and Volkswagen)
 - Brand codes are the same values used by the FIPE API (stored in `brands.brand_code` in database)
-- See [docs/BRAND_CODES.md](docs/BRAND_CODES.md) for complete list of all 98 available brands
+- See [docs/BRAND_CODES.md](docs/BRAND_CODES.md) for complete list of all 103 available brands (as of October 2025)
 - Or query your database: `SELECT brand_code, brand_name FROM brands;`
 
 **Smart Skip Behavior**:

@@ -50,7 +50,7 @@ BRAND_FILTER_ENABLED=true
 BRAND_FILTER_CODES=6,59  # Audi and Volkswagen - see docs/BRAND_CODES.md for full list
 ```
 
-**Brand Codes**: See [BRAND_CODES.md](BRAND_CODES.md) for the complete list of 98 available brands.
+**Brand Codes**: See [BRAND_CODES.md](BRAND_CODES.md) for the complete list of 103 available brands (as of October 2025).
 
 ## Step 4: Run Scraper
 

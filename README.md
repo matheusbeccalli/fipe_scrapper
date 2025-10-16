@@ -107,7 +107,7 @@ BRAND_FILTER_CODES=6,59  # Audi and Volkswagen
 ```
 
 To find brand codes:
-- See complete list in **[docs/BRAND_CODES.md](docs/BRAND_CODES.md)** (98 brands)
+- See complete list in **[docs/BRAND_CODES.md](docs/BRAND_CODES.md)** (103 brands)
 - Or query your database: `SELECT brand_code, brand_name FROM brands;`
 
 ## 🏃‍♂️ Running the Scraper
