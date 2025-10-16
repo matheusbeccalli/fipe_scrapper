@@ -27,13 +27,15 @@ fipe_scraper/
 ├── config.py                # Configuration settings
 ├── database_models.py       # Database schema (SQLAlchemy models)
 ├── fipe_api_scraper.py     # Main API scraper (RECOMMENDED)
+├── utils.py                # Data export utilities
 ├── README.md               # This file
 ├── .env                    # Environment variables (create this)
 ├── fipe_data.db           # SQLite database (created automatically)
-└── docs/                   # Documentation
+└── docs/                   # Documentation & examples
     ├── API_DOCUMENTATION.md    # Complete API reference
     ├── BRAND_CODES.md          # Brand codes for filtering
-    └── QUICKSTART.md           # Quick start guide
+    ├── QUICKSTART.md           # Quick start guide
+    └── example_usage.py        # Code examples
 ```
 
 ## 🚀 Getting Started

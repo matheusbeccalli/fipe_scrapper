@@ -44,7 +44,7 @@ python utils.py
 python utils.py export
 
 # Run example queries and analysis
-python example_usage.py
+python docs/example_usage.py
 ```
 
 ## Architecture
@@ -87,7 +87,7 @@ The schema uses foreign keys and unique constraints to prevent duplicates and ma
 - `FIPEDataExporter` class: Helper for exporting and analyzing scraped data
 - Methods for CSV export, price history queries, statistics
 
-**example_usage.py** (demonstrates data queries)
+**docs/example_usage.py** (demonstrates data queries)
 - Examples of using the data with pandas and SQLAlchemy
 
 ### Important Technical Details

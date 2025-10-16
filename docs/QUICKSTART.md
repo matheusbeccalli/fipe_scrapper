@@ -84,7 +84,7 @@ python utils.py export
 
 ```bash
 # Run example queries
-python example_usage.py
+python docs/example_usage.py
 ```
 
 ## Common Issues
@@ -118,10 +118,13 @@ python example_usage.py
 | `config.py` | All settings |
 | `database_models.py` | Database structure |
 | `utils.py` | Export & analyze data |
-| `example_usage.py` | Code examples |
-| `BRAND_CODES.md` | **Complete list of brand codes for filtering** |
 | `fipe_data.db` | Your database (created automatically) |
 | `.env` | Optional configuration (copy from `.env.example`) |
+| `docs/` | **Documentation and examples** |
+| `docs/example_usage.py` | Code examples |
+| `docs/BRAND_CODES.md` | Complete list of brand codes for filtering |
+| `docs/QUICKSTART.md` | This guide |
+| `docs/API_DOCUMENTATION.md` | API reference |
 
 ## What's Being Scraped?
 
