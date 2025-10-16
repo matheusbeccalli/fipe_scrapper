@@ -31,20 +31,26 @@ python database_models.py
 
 You should see: "Database created successfully!"
 
-## Step 3: Configure Date Range (Optional)
+## Step 3: Configure Scraping Options (Optional)
 
-To test or limit scraping to specific months, create a `.env` file:
+To test or customize scraping, create a `.env` file:
 
 ```bash
 # Copy example config
 cp .env.example .env
 
-# Edit .env and set:
+# Edit .env and configure:
+
+# Date range (optional - leave blank for all months 2001-present)
 SCRAPE_START_DATE=2024-01
 SCRAPE_END_DATE=2024-12
+
+# Brand filtering (NEW! - leave disabled to scrape all brands)
+BRAND_FILTER_ENABLED=true
+BRAND_FILTER_CODES=6,59  # Audi and Volkswagen - see BRAND_CODES.md for full list
 ```
 
-Leave these blank to scrape ALL available months (2001-present).
+**Brand Codes**: See [BRAND_CODES.md](BRAND_CODES.md) for the complete list of 98 available brands.
 
 ## Step 4: Run Scraper
 
@@ -96,7 +102,8 @@ python example_usage.py
 **Still too slow?**
 - Already using the fastest method (direct API calls)
 - Limit date range in `.env` to scrape only recent months
-- Full historical scrape (250+ months) will take time even with API
+- Use brand filtering to scrape priority brands first (see [BRAND_CODES.md](BRAND_CODES.md))
+- Full historical scrape (250+ months, all brands) will take time even with API
 
 **Need to stop?**
 - Press `Ctrl+C`
@@ -112,6 +119,7 @@ python example_usage.py
 | `database_models.py` | Database structure |
 | `utils.py` | Export & analyze data |
 | `example_usage.py` | Code examples |
+| `BRAND_CODES.md` | **Complete list of brand codes for filtering** |
 | `fipe_data.db` | Your database (created automatically) |
 | `.env` | Optional configuration (copy from `.env.example`) |
 

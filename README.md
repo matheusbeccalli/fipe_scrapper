@@ -101,10 +101,9 @@ BRAND_FILTER_CODES=6,59  # Audi and Volkswagen
 # BRAND_FILTER_ENABLED=false
 ```
 
-To find brand codes, check your database:
-```sql
-SELECT brand_code, brand_name FROM brands;
-```
+To find brand codes:
+- See complete list in **[BRAND_CODES.md](BRAND_CODES.md)** (98 brands)
+- Or query your database: `SELECT brand_code, brand_name FROM brands;`
 
 ## 🏃‍♂️ Running the Scraper
 
@@ -256,7 +255,7 @@ BRAND_FILTER_CODES=6,59  # Audi and Volkswagen
 SCRAPE_START_DATE=2024-01
 SCRAPE_END_DATE=2024-12
 BRAND_FILTER_ENABLED=true
-BRAND_FILTER_CODES=6,59
+BRAND_FILTER_CODES=6,59  # Audi (6) and Volkswagen (59) - see BRAND_CODES.md
 ```
 Run scraper → Gets all Audi and Volkswagen data for 2024
 
