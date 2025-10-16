@@ -47,7 +47,7 @@ SCRAPE_END_DATE=2024-12
 
 # Brand filtering (NEW! - leave disabled to scrape all brands)
 BRAND_FILTER_ENABLED=true
-BRAND_FILTER_CODES=6,59  # Audi and Volkswagen - see BRAND_CODES.md for full list
+BRAND_FILTER_CODES=6,59  # Audi and Volkswagen - see docs/BRAND_CODES.md for full list
 ```
 
 **Brand Codes**: See [BRAND_CODES.md](BRAND_CODES.md) for the complete list of 98 available brands.
@@ -102,7 +102,7 @@ python example_usage.py
 **Still too slow?**
 - Already using the fastest method (direct API calls)
 - Limit date range in `.env` to scrape only recent months
-- Use brand filtering to scrape priority brands first (see [BRAND_CODES.md](BRAND_CODES.md))
+- Use brand filtering to scrape priority brands first (see [docs/BRAND_CODES.md](../BRAND_CODES.md))
 - Full historical scrape (250+ months, all brands) will take time even with API
 
 **Need to stop?**

@@ -27,10 +27,13 @@ fipe_scraper/
 ├── config.py                # Configuration settings
 ├── database_models.py       # Database schema (SQLAlchemy models)
 ├── fipe_api_scraper.py     # Main API scraper (RECOMMENDED)
-├── API_DOCUMENTATION.md    # Complete API reference
 ├── README.md               # This file
 ├── .env                    # Environment variables (create this)
-└── fipe_data.db           # SQLite database (created automatically)
+├── fipe_data.db           # SQLite database (created automatically)
+└── docs/                   # Documentation
+    ├── API_DOCUMENTATION.md    # Complete API reference
+    ├── BRAND_CODES.md          # Brand codes for filtering
+    └── QUICKSTART.md           # Quick start guide
 ```
 
 ## 🚀 Getting Started
@@ -102,7 +105,7 @@ BRAND_FILTER_CODES=6,59  # Audi and Volkswagen
 ```
 
 To find brand codes:
-- See complete list in **[BRAND_CODES.md](BRAND_CODES.md)** (98 brands)
+- See complete list in **[docs/BRAND_CODES.md](docs/BRAND_CODES.md)** (98 brands)
 - Or query your database: `SELECT brand_code, brand_name FROM brands;`
 
 ## 🏃‍♂️ Running the Scraper
@@ -200,7 +203,7 @@ The scraper uses these endpoints:
 - **Checkpoint System**: Saves progress after each model, resume anytime
 - **Detailed Statistics**: Shows success rate, request counts, timing
 
-See `API_DOCUMENTATION.md` for complete endpoint details.
+See [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) for complete endpoint details.
 
 ## ⚠️ Important Notes
 
@@ -255,7 +258,7 @@ BRAND_FILTER_CODES=6,59  # Audi and Volkswagen
 SCRAPE_START_DATE=2024-01
 SCRAPE_END_DATE=2024-12
 BRAND_FILTER_ENABLED=true
-BRAND_FILTER_CODES=6,59  # Audi (6) and Volkswagen (59) - see BRAND_CODES.md
+BRAND_FILTER_CODES=6,59  # Audi (6) and Volkswagen (59) - see docs/BRAND_CODES.md
 ```
 Run scraper → Gets all Audi and Volkswagen data for 2024
 
