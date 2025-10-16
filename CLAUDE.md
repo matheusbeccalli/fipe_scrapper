@@ -133,6 +133,25 @@ By default, the scraper processes ALL available months (250+ months from 2001-pr
 - Useful for testing (scrape one month) or incremental updates (scrape recent months only)
 - Set to `None` or comment out to scrape all available months
 
+### Brand Filtering
+By default, the scraper processes ALL available brands. To limit scraping to specific brands:
+- Set `BRAND_FILTER_ENABLED=true` in `.env` or `config.py`
+- Set `BRAND_FILTER_CODES` to comma-separated brand codes (e.g., `6,59` for Audi and Volkswagen)
+- Brand codes are the same values used by the FIPE API (stored in `brands.brand_code` in database)
+- Find brand codes by checking your database: `SELECT brand_code, brand_name FROM brands;`
+
+**Smart Skip Behavior**:
+- If a brand already has complete data for the specified date range, it will be automatically skipped
+- This allows you to run the scraper with different brand selections without re-scraping existing data
+- Example workflow:
+  1. First run: `BRAND_FILTER_CODES=6,59` (scrape Audi and Volkswagen for Jan-Dec 2024)
+  2. Second run: Remove filter or specify all brands (scraper will skip Audi/Volkswagen, scrape everything else)
+
+**Use Cases**:
+- Prioritize specific brands: Scrape your most important brands first, then fill in the rest later
+- Testing: Scrape a single brand to test your setup before running a full scrape
+- Incremental updates: Add new brands to your dataset without re-scraping existing ones
+
 ## Common Issues
 
 **Website Structure Changes**: If scraping fails with `NoSuchElementException`, the FIPE website structure may have changed. Check:

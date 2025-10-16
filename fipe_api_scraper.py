@@ -137,6 +137,60 @@ class FIPEAPIScraper:
         except FileNotFoundError:
             return {}
 
+    def _brand_has_data_for_months(self, brand_code: str, month_codes: List[str]) -> bool:
+        """
+        Check if a brand already has price data for specific months.
+
+        Args:
+            brand_code: FIPE brand code to check
+            month_codes: List of month codes to check for
+
+        Returns:
+            True if brand has data for ALL specified months, False otherwise
+        """
+        db_session = self.SessionMaker()
+
+        try:
+            # Get the brand from database
+            brand = db_session.query(Brand).filter(Brand.brand_code == brand_code).first()
+
+            if not brand:
+                logger.debug(f"Brand {brand_code} not found in database")
+                return False
+
+            # Get all months for which this brand has price data
+            from sqlalchemy import distinct
+            existing_month_ids = db_session.query(distinct(CarPrice.reference_month_id)).join(
+                ModelYear
+            ).join(
+                CarModel
+            ).filter(
+                CarModel.brand_id == brand.id
+            ).all()
+
+            existing_month_ids = {month_id[0] for month_id in existing_month_ids}
+
+            # Get month IDs for the codes we're checking
+            target_months = db_session.query(ReferenceMonth).filter(
+                ReferenceMonth.month_code.in_(month_codes)
+            ).all()
+
+            target_month_ids = {month.id for month in target_months}
+
+            # Brand has data if all target months are in existing months
+            has_all_data = target_month_ids.issubset(existing_month_ids)
+
+            if has_all_data:
+                logger.info(f"Brand {brand_code} already has data for all specified months")
+
+            return has_all_data
+
+        except Exception as e:
+            logger.error(f"Error checking brand data: {e}")
+            return False
+        finally:
+            db_session.close()
+
     def _save_checkpoint(self, checkpoint_data: Dict):
         """Save scraping progress to checkpoint file."""
         if config.RESUME_CONFIG['enable_resume']:
@@ -656,6 +710,26 @@ class FIPEAPIScraper:
                     logger.error("No months to scrape")
                     return
 
+                # Extract month codes for brand filtering check
+                month_codes = [str(month['Codigo']) for month in months]
+
+                # Check if brand filtering is enabled
+                brand_filter_enabled = config.BRAND_FILTER.get('enabled', False)
+                brand_filter_codes = config.BRAND_FILTER.get('brand_codes')
+
+                if brand_filter_enabled and brand_filter_codes:
+                    # Clean up brand codes (remove empty strings)
+                    brand_filter_codes = [code.strip() for code in brand_filter_codes if code.strip()]
+
+                    if brand_filter_codes:
+                        logger.info(f"Brand filtering enabled: will only scrape brands {brand_filter_codes}")
+                    else:
+                        logger.info("Brand filter enabled but no codes specified, scraping all brands")
+                        brand_filter_enabled = False
+                else:
+                    logger.info("Brand filtering disabled, scraping all brands")
+                    brand_filter_enabled = False
+
                 # Process each month
                 for month_idx, month in enumerate(months):
                     logger.info(f"Processing month {month_idx + 1}/{len(months)}: {month['Mes']}")
@@ -664,8 +738,19 @@ class FIPEAPIScraper:
                     brands = await self.get_brands(session, month['Codigo'])
                     logger.info(f"Found {len(brands)} brands")
 
+                    # Apply brand filtering if enabled
+                    if brand_filter_enabled and brand_filter_codes:
+                        original_count = len(brands)
+                        brands = [b for b in brands if b['Value'] in brand_filter_codes]
+                        logger.info(f"Filtered to {len(brands)} brand(s) (from {original_count} total)")
+
                     # Process each brand
                     for brand_idx, brand in enumerate(brands):
+                        # Check if brand already has complete data for all specified months
+                        if self._brand_has_data_for_months(brand['Value'], month_codes):
+                            logger.info(f"Skipping brand {brand_idx + 1}/{len(brands)}: {brand['Label']} (already has complete data)")
+                            continue
+
                         logger.info(f"Processing brand {brand_idx + 1}/{len(brands)}: {brand['Label']}")
 
                         # Get all models for this brand

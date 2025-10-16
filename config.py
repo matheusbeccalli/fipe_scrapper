@@ -63,6 +63,18 @@ DATE_RANGE = {
     'end_date': os.getenv('SCRAPE_END_DATE', '2024-01'),      # Format: 'YYYY-MM' or None for all
 }
 
+# Brand filter configuration (optional)
+# Set to None or empty list to scrape all brands
+# Use brand_code values from the FIPE API (same as stored in database)
+# Examples: ['6', '59'] for Audi and Volkswagen
+# When specified, scraper will:
+# 1. Only scrape data for these brands
+# 2. Auto-skip brands that already have data for the specified date range
+BRAND_FILTER = {
+    'enabled': os.getenv('BRAND_FILTER_ENABLED', 'false').lower() == 'true',
+    'brand_codes': os.getenv('BRAND_FILTER_CODES', '').split(',') if os.getenv('BRAND_FILTER_CODES') else None,
+}
+
 # Resume scraping configuration
 RESUME_CONFIG = {
     'enable_resume': True,  # If True, skips already scraped combinations

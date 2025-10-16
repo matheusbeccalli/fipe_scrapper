@@ -71,9 +71,16 @@ python database_models.py
 
 You should see output showing the tables being created.
 
-5. **Configure date range (optional):**
+5. **Configure scraping options (optional):**
 
-Create a `.env` file or edit `config.py`:
+Create a `.env` file from the example:
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` to configure:
+
+**Date Range Filtering:**
 ```bash
 # Scrape specific date range (faster for testing)
 SCRAPE_START_DATE=2024-01
@@ -82,6 +89,21 @@ SCRAPE_END_DATE=2024-01
 # Scrape everything (leave empty or comment out)
 # SCRAPE_START_DATE=
 # SCRAPE_END_DATE=
+```
+
+**Brand Filtering (NEW!):**
+```bash
+# Enable brand filtering to scrape only specific brands
+BRAND_FILTER_ENABLED=true
+BRAND_FILTER_CODES=6,59  # Audi and Volkswagen
+
+# Or scrape all brands (default)
+# BRAND_FILTER_ENABLED=false
+```
+
+To find brand codes, check your database:
+```sql
+SELECT brand_code, brand_name FROM brands;
 ```
 
 ## 🏃‍♂️ Running the Scraper
@@ -209,6 +231,50 @@ RESUME_CONFIG = {
     'enable_resume': False,  # Disable resume feature
 }
 ```
+
+## 🎯 Brand Filtering (Smart Skip Feature)
+
+The scraper can now filter by specific brands and automatically skip brands that already have complete data:
+
+### How It Works
+
+1. **Enable brand filtering** in `.env`:
+```bash
+BRAND_FILTER_ENABLED=true
+BRAND_FILTER_CODES=6,59  # Audi and Volkswagen
+```
+
+2. **Smart skip behavior**: If you later change the filter or remove it entirely, the scraper will automatically skip brands that already have complete data for your specified date range.
+
+### Example Workflow
+
+**Scenario**: You want to prioritize Audi and Volkswagen, then scrape other brands later.
+
+**Step 1** - Scrape priority brands:
+```bash
+# In .env
+SCRAPE_START_DATE=2024-01
+SCRAPE_END_DATE=2024-12
+BRAND_FILTER_ENABLED=true
+BRAND_FILTER_CODES=6,59
+```
+Run scraper → Gets all Audi and Volkswagen data for 2024
+
+**Step 2** - Scrape remaining brands:
+```bash
+# In .env
+SCRAPE_START_DATE=2024-01
+SCRAPE_END_DATE=2024-12
+BRAND_FILTER_ENABLED=false  # Or remove the filter
+```
+Run scraper → Automatically skips Audi and Volkswagen (already complete), scrapes all other brands
+
+### Benefits
+
+- **Prioritize important brands**: Get data for your most important brands first
+- **No duplicate scraping**: Smart detection prevents re-scraping existing data
+- **Flexible workflow**: Can scrape brands in any order or combination
+- **Faster testing**: Test with a single brand before running full scrape
 
 ## 🐛 Troubleshooting
 
