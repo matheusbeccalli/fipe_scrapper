@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Python web scraper for collecting historical car price data from the FIPE (Fundação Instituto de Pesquisas Econômicas) website, Brazil's vehicle price reference. The scraper uses Selenium to navigate the JavaScript-heavy FIPE website, extracts price data for all car brands/models/years across all available months (from January 2001 to present), and stores the data in a relational database.
+This is a Python web scraper for collecting historical car price data from the FIPE (Fundação Instituto de Pesquisas Econômicas) website, Brazil's vehicle price reference. The scraper uses direct HTTP requests to the FIPE REST API to extract price data for all car brands/models/years across all available months (from January 2001 to present), and stores the data in a relational database.
+
+**Performance**: Uses async/await for concurrent requests with minimal memory footprint (~50MB). Full scrape of all available data takes approximately 24-48 hours with default conservative settings.
 
 ## Key Commands
 
@@ -31,8 +33,11 @@ python database_models.py
 
 ### Running the Scraper
 ```bash
-# Run the main scraper (takes hours/days for full scrape)
-python fipe_scraper.py
+# Run the main scraper
+python fipe_api_scraper.py
+
+# Monitor scraping progress in real-time
+tail -f fipe_scraper.log
 ```
 
 ### Data Export and Analysis
@@ -53,7 +58,7 @@ python docs/example_usage.py
 The scraper follows a nested loop pattern to exhaustively collect all data:
 1. **Months** → 2. **Brands** → 3. **Models** → 4. **Model Years** → 5. **Price Data**
 
-Each level depends on the previous selection in the web interface.
+Each level depends on the previous selection in the API request parameters (e.g., to get models, you must specify month + brand).
 
 ### Database Schema (5 tables, fully normalized)
 - **reference_months**: Time periods for which data is available (e.g., "dezembro/2024")
@@ -66,21 +71,24 @@ The schema uses foreign keys and unique constraints to prevent duplicates and ma
 
 ### Core Components
 
-**fipe_scraper.py** (main scraper logic)
-- `FIPEScraper` class: Main scraper orchestrating the entire workflow
-- `_setup_browser()`: Configures Chrome with Selenium WebDriver
-- `_get_dropdown_options()`: Extracts options from Chosen jQuery dropdown plugin
-- `_select_dropdown_option()`: Selects specific dropdown values
-- `scrape_all_data()`: Main entry point that loops through all combinations
-- `_extract_price_data()`: Scrapes price information from result page
-- Database save methods: `_save_reference_month()`, `_save_brand()`, `_save_car_model()`, `_save_model_year()`, `_save_price()`
+**fipe_api_scraper.py** (main scraper logic)
+- `FIPEAPIScraper` class: High-performance scraper using async HTTP requests
+- `_make_request()`: Makes API requests with retry logic and adaptive rate limiting
+- `get_reference_months()`: Fetches all available time periods
+- `get_brands()`: Fetches all car manufacturers for a specific month
+- `get_models()`: Fetches all models for a brand
+- `get_model_years()`: Fetches year/fuel combinations for a model
+- `get_price()`: Fetches price data for a specific configuration
+- `scrape_all_data()`: Main entry point with concurrent scraping
+- `_flush_database_batch()`: Bulk database saves for performance
+- `_brand_has_data_for_month()`: Smart skip logic to avoid re-scraping existing data
 
 **database_models.py** (SQLAlchemy ORM models)
 - Defines all 5 database tables using declarative_base
 - `create_database()`: Factory function that creates tables and returns engine/Session
 
 **config.py** (centralized configuration)
-- All configurable settings including element IDs, delays, database URL, logging
+- All configurable settings including database URL, logging, date/brand filters
 - Modify this file rather than hardcoding values in the scraper
 
 **utils.py** (data export utilities)
@@ -92,30 +100,35 @@ The schema uses foreign keys and unique constraints to prevent duplicates and ma
 
 ### Important Technical Details
 
-**Selenium Element Interaction**
-The FIPE website uses the Chosen jQuery plugin for dropdowns, which creates custom HTML instead of standard `<select>` elements. The scraper must:
-1. Click the dropdown to open it (`{select_id}_chosen`)
-2. Find `<li>` elements with `data-option-array-index` attributes
-3. Click the specific option by its index
+**API Endpoints**
+The scraper uses the official FIPE REST API at `http://veiculos.fipe.org.br/api/veiculos`:
+- `/ConsultarTabelaDeReferencia`: Get available months
+- `/ConsultarMarcas`: Get brands for a month
+- `/ConsultarModelos`: Get models for a brand
+- `/ConsultarAnoModelo`: Get year/fuel combinations for a model
+- `/ConsultarValorComTodosParametros`: Get price data
 
 **Checkpoint/Resume System**
-- Progress is saved to `scraping_checkpoint.json` after each brand is completed
-- Format: `{month_value}_{brand_value}: true`
+- Progress is saved to `scraping_checkpoint.json` after each model is completed
+- Format: `{month_code}_{brand_code}_{model_code}: true`
 - Can be disabled in `config.py` via `RESUME_CONFIG['enable_resume']`
+- Allows resuming after interruptions without re-scraping completed data
 
-**Ethical Scraping Considerations**
-- Default 2-second delay between requests (`SCRAPING_CONFIG['delay_between_requests']`)
-- Headless browser mode to reduce resource usage
-- Resume capability to avoid re-scraping on interruptions
-- FIPE provides no API, requires model-by-model scraping per their terms
+**Rate Limiting & Performance**
+- Adaptive rate limiting (starts at 500ms, adjusts based on errors)
+- Concurrent requests controlled by semaphore (default: 1 concurrent request)
+- Automatic retry with exponential backoff on 429 (rate limit) and 520 (server overload) errors
+- Batch database commits (100 records per commit) for optimal performance
+- Smart skip: automatically skips brands that already have data for specified months
 
 ## Configuration Notes
 
 All settings are in `config.py`:
-- **ELEMENT_IDS**: CSS selectors for FIPE website elements (may break if website changes)
-- **SELENIUM_CONFIG**: Browser behavior (set `headless: False` to see browser during debugging)
-- **SCRAPING_CONFIG**: Delays and retry logic
 - **DATABASE_URL**: SQLite by default, can use PostgreSQL/MySQL
+- **LOG_CONFIG**: Logging level, file location, and rotation settings
+- **DATE_RANGE**: Optional date filtering for scraping specific time periods
+- **BRAND_FILTER**: Optional brand filtering for targeted scraping
+- **RESUME_CONFIG**: Checkpoint system configuration
 
 ### Environment Variables
 Configuration can be customized using environment variables (recommended for sensitive data):
@@ -155,11 +168,22 @@ By default, the scraper processes ALL available brands. To limit scraping to spe
 
 ## Common Issues
 
-**Website Structure Changes**: If scraping fails with `NoSuchElementException`, the FIPE website structure may have changed. Check:
-- Element IDs in `config.py`
-- CSS selectors in `_get_dropdown_options()` and `_extract_price_data()`
+**Rate Limiting (429 errors)**: If you see frequent 429 errors:
+- The adaptive rate limiting will automatically slow down
+- Consider reducing `max_concurrent_requests` in `fipe_api_scraper.py:869` (default is 1)
+- Increase `request_delay` in the scraper initialization
 
-**Performance**: Full scrape takes days due to:
-- Thousands of brand/model/year combinations
-- 250+ months of historical data
-- Mandatory delays between requests
+**Server Overload (520 errors)**: If you see 520 errors:
+- The FIPE API server is temporarily overloaded
+- The scraper will automatically retry with exponential backoff
+- Adaptive delay will increase to reduce server load
+
+**API Changes**: If scraping fails with unexpected errors:
+- The FIPE API structure may have changed
+- Check API endpoints in `fipe_api_scraper.py:43-55`
+- Verify request/response formats in the `_make_request()` method
+
+**Performance**: Full scrape (all 298 months, all brands):
+- Approximately 24-48 hours with default settings (1 concurrent request)
+- Can be sped up by increasing concurrency, but risks rate limiting
+- Use date/brand filtering for faster targeted scrapes
