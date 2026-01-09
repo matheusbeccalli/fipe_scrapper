@@ -89,8 +89,47 @@ def get_database_connection():
     return engine
 
 
+def fetch_price_data(engine) -> pd.DataFrame:
+    """
+    Fetch all price records with their associated metadata.
+
+    Returns a DataFrame with columns:
+    - brand_id, brand_code, brand_name
+    - model_id, model_code, model_name
+    - model_year_id, year_code, year_description
+    - month_date
+    """
+    query = """
+    SELECT
+        b.id as brand_id,
+        b.brand_code,
+        b.brand_name,
+        cm.id as model_id,
+        cm.model_code,
+        cm.model_name,
+        my.id as model_year_id,
+        my.year_code,
+        my.year_description,
+        rm.month_date
+    FROM car_prices cp
+    JOIN reference_months rm ON cp.reference_month_id = rm.id
+    JOIN model_years my ON cp.model_year_id = my.id
+    JOIN car_models cm ON my.car_model_id = cm.id
+    JOIN brands b ON cm.brand_id = b.id
+    ORDER BY b.brand_name, cm.model_name, my.year_description, rm.month_date
+    """
+
+    df = pd.read_sql(query, engine)
+    print(f"Fetched {len(df):,} price records")
+    return df
+
+
 if __name__ == "__main__":
     print("FIPE Data Coverage Report Generator")
     print("=" * 40)
     engine = get_database_connection()
-    print(f"Connected to database: {config.DATABASE_URL}")
+
+    print("\nFetching price data...")
+    df = fetch_price_data(engine)
+    print(f"Data spans {df['month_date'].nunique()} unique months")
+    print(f"Covering {df['brand_id'].nunique()} brands")
