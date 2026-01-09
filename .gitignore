@@ -1,4 +1,6 @@
 *.png
+*.bat
+coverage*.html
 
 # Python
 __pycache__/
