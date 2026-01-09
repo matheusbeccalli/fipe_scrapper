@@ -52,6 +52,13 @@ python utils.py export
 python docs/example_usage.py
 ```
 
+### Data Coverage Analysis
+```bash
+# Generate data coverage report (finds gaps in price data)
+python coverage_report.py
+# Output: coverage_report_YYYY-MM-DD.html
+```
+
 ## Architecture
 
 ### Data Flow
