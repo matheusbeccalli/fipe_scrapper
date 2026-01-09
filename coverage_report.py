@@ -21,6 +21,19 @@ from dataclasses import dataclass, field
 import config
 
 
+def generate_month_range(start_date: date, end_date: date) -> Set[date]:
+    """Generate all months between start and end (inclusive)."""
+    months = set()
+    current = date(start_date.year, start_date.month, 1)
+    end = date(end_date.year, end_date.month, 1)
+
+    while current <= end:
+        months.add(current)
+        current = current + relativedelta(months=1)
+
+    return months
+
+
 @dataclass
 class ModelYearCoverage:
     """Coverage data for a single model year."""
@@ -124,6 +137,76 @@ def fetch_price_data(engine) -> pd.DataFrame:
     return df
 
 
+def analyze_coverage(df: pd.DataFrame) -> List[BrandCoverage]:
+    """
+    Analyze the price data to find coverage gaps.
+
+    For each model year:
+    1. Find first and last recorded month
+    2. Generate expected months between them
+    3. Find missing months (gaps)
+
+    Returns list of BrandCoverage objects with full hierarchy.
+    """
+    brands: Dict[int, BrandCoverage] = {}
+
+    # Ensure month_date is datetime.date
+    df['month_date'] = pd.to_datetime(df['month_date']).dt.date
+
+    # Group by model year to analyze each one
+    for (brand_id, brand_code, brand_name, model_id, model_code, model_name,
+         model_year_id, year_code, year_description), group in df.groupby([
+            'brand_id', 'brand_code', 'brand_name',
+            'model_id', 'model_code', 'model_name',
+            'model_year_id', 'year_code', 'year_description'
+         ]):
+
+        # Get recorded months for this model year
+        recorded_months = set(group['month_date'].tolist())
+        first_month = min(recorded_months)
+        last_month = max(recorded_months)
+
+        # Generate expected months and find gaps
+        expected_months = generate_month_range(first_month, last_month)
+        missing_months = sorted(expected_months - recorded_months)
+
+        # Create model year coverage
+        my_coverage = ModelYearCoverage(
+            model_year_id=model_year_id,
+            year_code=year_code,
+            year_description=year_description,
+            first_month=first_month,
+            last_month=last_month,
+            recorded_months=recorded_months,
+            missing_months=missing_months
+        )
+
+        # Add to hierarchy
+        if brand_id not in brands:
+            brands[brand_id] = BrandCoverage(
+                brand_id=brand_id,
+                brand_code=brand_code,
+                brand_name=brand_name
+            )
+
+        brand = brands[brand_id]
+
+        # Find or create model
+        model = next((m for m in brand.models if m.model_id == model_id), None)
+        if model is None:
+            model = ModelCoverage(
+                model_id=model_id,
+                model_code=model_code,
+                model_name=model_name
+            )
+            brand.models.append(model)
+
+        model.model_years.append(my_coverage)
+
+    # Sort brands by name
+    return sorted(brands.values(), key=lambda b: b.brand_name)
+
+
 if __name__ == "__main__":
     print("FIPE Data Coverage Report Generator")
     print("=" * 40)
@@ -133,3 +216,13 @@ if __name__ == "__main__":
     df = fetch_price_data(engine)
     print(f"Data spans {df['month_date'].nunique()} unique months")
     print(f"Covering {df['brand_id'].nunique()} brands")
+
+    print("\nAnalyzing coverage gaps...")
+    brands = analyze_coverage(df)
+
+    # Print summary
+    total_model_years = sum(len(m.model_years) for b in brands for m in b.models)
+    ok_model_years = sum(1 for b in brands for m in b.models for my in m.model_years if my.is_ok)
+    print(f"Analyzed {total_model_years:,} model years")
+    print(f"  OK: {ok_model_years:,}")
+    print(f"  With gaps: {total_model_years - ok_model_years:,}")
