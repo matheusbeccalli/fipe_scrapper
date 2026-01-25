@@ -6,19 +6,37 @@ showing which model years have missing months between their first and last
 recorded prices.
 
 Usage:
-    python coverage_report.py
+    python coverage_report.py           # Fast report (no API verification)
+    python coverage_report.py --verify  # Verify gaps against FIPE API
 
 Output:
     coverage_report_YYYY-MM-DD.html
 """
 
+import argparse
+import asyncio
 import pandas as pd
+import aiohttp
 from sqlalchemy import create_engine, text
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
-from typing import Dict, List, Set, Tuple, NamedTuple
+from typing import Dict, List, Set, Optional
 from dataclasses import dataclass, field
 import config
+
+
+# API Configuration (matching fipe_api_scraper.py)
+API_BASE_URL = "http://veiculos.fipe.org.br/api/veiculos"
+VEHICLE_TYPE_CAR = 1
+API_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Accept': 'application/json, text/javascript, */*; q=0.01',
+    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+    'Origin': 'http://veiculos.fipe.org.br',
+    'Referer': 'http://veiculos.fipe.org.br/',
+    'X-Requested-With': 'XMLHttpRequest',
+}
+API_REQUEST_DELAY = 0.5  # 500ms between requests
 
 
 def generate_month_range(start_date: date, end_date: date) -> Set[date]:
@@ -44,6 +62,11 @@ class ModelYearCoverage:
     last_month: date
     recorded_months: Set[date]
     missing_months: List[date] = field(default_factory=list)
+    # Fields for API verification (populated during analysis)
+    brand_code: str = ""
+    model_code: str = ""
+    # Track filtered gaps during verification
+    filtered_count: int = 0
 
     @property
     def is_ok(self) -> bool:
@@ -258,6 +281,48 @@ HTML_STYLES = """
         font-size: 0.85em;
         margin-top: 30px;
     }
+
+    .verification-badge {
+        background: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9em;
+    }
+
+    .badge.verified {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .badge.unverified {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .badge-info {
+        color: #666;
+        font-size: 0.9em;
+    }
+
+    .filtered-info {
+        background: #e8f4fd;
+        padding: 10px 20px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        color: #0c5460;
+        font-size: 0.9em;
+    }
 </style>
 """
 
@@ -344,7 +409,9 @@ def analyze_coverage(df: pd.DataFrame) -> List[BrandCoverage]:
             first_month=first_month,
             last_month=last_month,
             recorded_months=recorded_months,
-            missing_months=missing_months
+            missing_months=missing_months,
+            brand_code=str(brand_code),
+            model_code=str(model_code)
         )
 
         # Add to hierarchy
@@ -373,7 +440,226 @@ def analyze_coverage(df: pd.DataFrame) -> List[BrandCoverage]:
     return sorted(brands.values(), key=lambda b: b.brand_name)
 
 
-def generate_html_report(brands: List[BrandCoverage], output_path: str) -> None:
+# ============================================================================
+# API Verification Functions
+# ============================================================================
+
+async def fetch_reference_months(session: aiohttp.ClientSession) -> Dict[date, int]:
+    """
+    Fetch all reference months from the FIPE API.
+
+    Returns:
+        Dict mapping date objects to month codes (e.g., {date(2024, 12, 1): 312})
+    """
+    url = f"{API_BASE_URL}/ConsultarTabelaDeReferencia"
+
+    try:
+        async with session.post(url, headers=API_HEADERS) as response:
+            if response.status == 200:
+                months = await response.json()
+
+                # Portuguese month name to number mapping
+                portuguese_months = {
+                    'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4,
+                    'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8,
+                    'setembro': 9, 'outubro': 10, 'novembro': 11, 'dezembro': 12
+                }
+
+                date_to_code = {}
+                for month in months:
+                    month_text = month.get('Mes', '').lower().strip()
+                    code = month.get('Codigo')
+
+                    parts = month_text.split('/')
+                    if len(parts) == 2:
+                        month_name = parts[0].strip()
+                        year_str = parts[1].strip()
+                        month_num = portuguese_months.get(month_name, 1)
+                        try:
+                            year = int(year_str)
+                            date_to_code[date(year, month_num, 1)] = code
+                        except ValueError:
+                            pass
+
+                return date_to_code
+            else:
+                print(f"Error fetching reference months: HTTP {response.status}")
+                return {}
+    except Exception as e:
+        print(f"Error fetching reference months: {e}")
+        return {}
+
+
+async def check_price_exists(
+    session: aiohttp.ClientSession,
+    month_code: int,
+    brand_code: str,
+    model_code: str,
+    year_code: str,
+    max_retries: int = 3
+) -> bool:
+    """
+    Check if a price exists on the FIPE API for a specific configuration.
+
+    Args:
+        session: aiohttp session
+        month_code: Reference month code from API
+        brand_code: Brand code
+        model_code: Model code
+        year_code: Year code (e.g., "2020-1" for 2020 gasoline)
+
+    Returns:
+        True if price data exists, False otherwise
+    """
+    url = f"{API_BASE_URL}/ConsultarValorComTodosParametros"
+
+    # Parse year_code into year and fuel type
+    # Format is typically "2020-1" where 1=gasoline, 2=alcohol, 3=diesel
+    parts = year_code.split('-')
+    if len(parts) == 2:
+        year = parts[0]
+        fuel_code = parts[1]
+    else:
+        year = year_code
+        fuel_code = '1'  # Default to gasoline
+
+    data = {
+        'codigoTabelaReferencia': month_code,
+        'codigoTipoVeiculo': VEHICLE_TYPE_CAR,
+        'codigoMarca': brand_code,
+        'codigoModelo': model_code,
+        'anoModelo': year,
+        'codigoTipoCombustivel': fuel_code,
+        'tipoConsulta': 'tradicional'
+    }
+
+    for attempt in range(max_retries):
+        try:
+            await asyncio.sleep(API_REQUEST_DELAY)
+
+            async with session.post(url, data=data, headers=API_HEADERS) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    # If we get valid data (has 'Valor' field), price exists
+                    # If we get an error response, it typically has 'erro' field
+                    if isinstance(result, dict) and 'Valor' in result:
+                        return True
+                    return False
+                elif response.status in (429, 520):
+                    # Rate limited or server overload - retry
+                    wait_time = 2.0 * (2 ** attempt)
+                    print(f"  API returned {response.status}, retrying in {wait_time:.1f}s...")
+                    await asyncio.sleep(wait_time)
+                    continue
+                else:
+                    return False
+
+        except Exception as e:
+            if attempt < max_retries - 1:
+                await asyncio.sleep(2.0)
+                continue
+            return False
+
+    return False
+
+
+async def verify_gaps(brands: List[BrandCoverage]) -> int:
+    """
+    Verify all detected gaps against the FIPE API.
+
+    Removes gaps from missing_months if the API confirms no data exists.
+
+    Args:
+        brands: List of BrandCoverage objects with detected gaps
+
+    Returns:
+        Total number of gaps that were filtered out (data doesn't exist on FIPE)
+    """
+    # Count total gaps to verify
+    total_gaps = sum(
+        len(my.missing_months)
+        for b in brands
+        for m in b.models
+        for my in m.model_years
+        if my.missing_months
+    )
+
+    if total_gaps == 0:
+        print("No gaps to verify.")
+        return 0
+
+    print(f"Verifying {total_gaps:,} gap(s) against FIPE API...")
+    print("This may take a while. Press Ctrl+C to cancel.\n")
+
+    total_filtered = 0
+    verified = 0
+
+    async with aiohttp.ClientSession() as session:
+        # First, fetch reference months to map dates to codes
+        print("Fetching reference months from API...")
+        date_to_code = await fetch_reference_months(session)
+
+        if not date_to_code:
+            print("ERROR: Could not fetch reference months. Skipping verification.")
+            return 0
+
+        print(f"Found {len(date_to_code)} reference months in API.\n")
+
+        # Iterate through all model years with gaps
+        for brand in brands:
+            for model in brand.models:
+                for my in model.model_years:
+                    if not my.missing_months:
+                        continue
+
+                    verified_missing = []
+                    filtered_this_year = 0
+
+                    for gap_date in my.missing_months:
+                        verified += 1
+
+                        # Get month code from date
+                        month_code = date_to_code.get(gap_date)
+                        if month_code is None:
+                            # Date not in reference months = not a real gap
+                            filtered_this_year += 1
+                            continue
+
+                        # Check if price exists on API
+                        exists = await check_price_exists(
+                            session,
+                            month_code,
+                            my.brand_code,
+                            my.model_code,
+                            my.year_code
+                        )
+
+                        if exists:
+                            # True gap - data exists but we don't have it
+                            verified_missing.append(gap_date)
+                        else:
+                            # Not a real gap - data doesn't exist on FIPE
+                            filtered_this_year += 1
+
+                        # Progress update
+                        if verified % 10 == 0:
+                            print(f"  Progress: {verified}/{total_gaps} verified, "
+                                  f"{total_filtered + filtered_this_year} filtered")
+
+                    # Update missing months to only include verified gaps
+                    my.missing_months = verified_missing
+                    my.filtered_count = filtered_this_year
+                    total_filtered += filtered_this_year
+
+    print(f"\nVerification complete:")
+    print(f"  Total gaps checked: {total_gaps:,}")
+    print(f"  Filtered out (no data on FIPE): {total_filtered:,}")
+    print(f"  Verified true gaps: {total_gaps - total_filtered:,}")
+
+    return total_filtered
+
+
+def generate_html_report(brands: List[BrandCoverage], output_path: str, verified: bool = False, filtered_count: int = 0) -> None:
     """Generate the HTML coverage report."""
 
     # Calculate summary stats
@@ -383,6 +669,28 @@ def generate_html_report(brands: List[BrandCoverage], output_path: str) -> None:
     ok_brands = sum(1 for b in brands if b.is_ok)
     ok_models = sum(1 for b in brands for m in b.models if m.is_ok)
     ok_model_years = sum(1 for b in brands for m in b.models for my in m.model_years if my.is_ok)
+
+    # Verification badge HTML
+    if verified:
+        verification_badge = """
+        <div class='verification-badge'>
+            <span class='badge verified'>&#x2713; Verified</span>
+            <span class='badge-info'>Gaps verified against FIPE API</span>
+        </div>
+        """
+        if filtered_count > 0:
+            verification_badge += f"""
+        <div class='filtered-info'>
+            <strong>{filtered_count:,}</strong> potential gap(s) filtered out (data doesn't exist on FIPE)
+        </div>
+            """
+    else:
+        verification_badge = """
+        <div class='verification-badge'>
+            <span class='badge unverified'>Unverified</span>
+            <span class='badge-info'>Run with --verify to check gaps against FIPE API</span>
+        </div>
+        """
 
     html_parts = [
         "<!DOCTYPE html>",
@@ -395,6 +703,7 @@ def generate_html_report(brands: List[BrandCoverage], output_path: str) -> None:
         "</head>",
         "<body>",
         "    <h1>FIPE Data Coverage Report</h1>",
+        verification_badge,
         "    <div class='summary'>",
         "        <div class='summary-grid'>",
         f"            <div class='summary-item'><div class='number'>{total_brands}</div><div class='label'>Brands ({ok_brands} OK)</div></div>",
@@ -463,8 +772,24 @@ def generate_html_report(brands: List[BrandCoverage], output_path: str) -> None:
 
 
 if __name__ == "__main__":
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(
+        description="Generate FIPE data coverage report"
+    )
+    parser.add_argument(
+        '--verify',
+        action='store_true',
+        help='Verify gaps against FIPE API (slower, but filters out false positives)'
+    )
+    args = parser.parse_args()
+
     print("FIPE Data Coverage Report Generator")
     print("=" * 40)
+    if args.verify:
+        print("Mode: VERIFIED (will query FIPE API)")
+    else:
+        print("Mode: FAST (no API verification)")
+
     engine = get_database_connection()
 
     print("\nFetching price data...")
@@ -475,13 +800,25 @@ if __name__ == "__main__":
     print("\nAnalyzing coverage gaps...")
     brands = analyze_coverage(df)
 
-    # Print summary
+    # Print initial summary
     total_model_years = sum(len(m.model_years) for b in brands for m in b.models)
-    ok_model_years = sum(1 for b in brands for m in b.models for my in m.model_years if my.is_ok)
+    initial_gaps = sum(1 for b in brands for m in b.models for my in m.model_years if not my.is_ok)
     print(f"Analyzed {total_model_years:,} model years")
-    print(f"  OK: {ok_model_years:,}")
-    print(f"  With gaps: {total_model_years - ok_model_years:,}")
+    print(f"  OK: {total_model_years - initial_gaps:,}")
+    print(f"  With potential gaps: {initial_gaps:,}")
+
+    # Optionally verify gaps against FIPE API
+    filtered_count = 0
+    if args.verify:
+        print("\n" + "=" * 40)
+        filtered_count = asyncio.run(verify_gaps(brands))
+
+        # Print updated summary after verification
+        ok_model_years = sum(1 for b in brands for m in b.models for my in m.model_years if my.is_ok)
+        print(f"\nAfter verification:")
+        print(f"  OK: {ok_model_years:,}")
+        print(f"  With true gaps: {total_model_years - ok_model_years:,}")
 
     # Generate HTML report
     output_filename = f"coverage_report_{datetime.now().strftime('%Y-%m-%d')}.html"
-    generate_html_report(brands, output_filename)
+    generate_html_report(brands, output_filename, verified=args.verify, filtered_count=filtered_count)
