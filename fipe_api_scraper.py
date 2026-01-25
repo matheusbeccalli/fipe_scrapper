@@ -760,16 +760,18 @@ class FIPEAPIScraper:
                             for model in models
                         ]
 
-                        # Execute all model scraping concurrently
-                        await asyncio.gather(*tasks)
+                        # Execute all model scraping concurrently and collect results
+                        results = await asyncio.gather(*tasks)
 
                         # Flush remaining batch data to database
                         self._flush_database_batch()
 
-                        # Save checkpoint for all models in this brand
-                        for model in models:
-                            checkpoint_key = f"{month['Codigo']}_{brand['Value']}_{model['Value']}"
-                            self.checkpoint[checkpoint_key] = True
+                        # Save checkpoint ONLY for models where prices were actually collected
+                        # This prevents marking models as "done" when no data was saved
+                        for model, prices_collected in zip(models, results):
+                            if prices_collected > 0:
+                                checkpoint_key = f"{month['Codigo']}_{brand['Value']}_{model['Value']}"
+                                self.checkpoint[checkpoint_key] = True
                         self._save_checkpoint(self.checkpoint)
 
                         logger.success(f"✓✓ Completed brand: {brand['Label']}")
