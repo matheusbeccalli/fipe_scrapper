@@ -105,6 +105,15 @@ The schema uses foreign keys and unique constraints to prevent duplicates and ma
 **docs/example_usage.py** (demonstrates data queries)
 - Examples of using the data with pandas and SQLAlchemy
 
+**proxy_manager.py** (proxy rotation for rate limit avoidance)
+- `ProxyPool` class: Manages HTTP/SOCKS4/SOCKS5 proxy rotation
+- `load_proxies()`: Loads proxies from file (one per line)
+- `get_next_proxy()`: Round-robin proxy selection with blacklist support
+- `get_random_user_agent()`: Returns random User-Agent from 50+ strings
+- `mark_proxy_success()/mark_proxy_failed()`: Tracks proxy health
+- `is_socks_proxy()`: Detects SOCKS proxies for special handling
+- Automatic blacklisting after 5 consecutive failures
+
 ### Important Technical Details
 
 **API Endpoints**
@@ -136,6 +145,7 @@ All settings are in `config.py`:
 - **DATE_RANGE**: Optional date filtering for scraping specific time periods
 - **BRAND_FILTER**: Optional brand filtering for targeted scraping
 - **RESUME_CONFIG**: Checkpoint system configuration
+- **PROXY_CONFIG**: Proxy rotation settings (enabled, file path, failure threshold)
 
 ### Environment Variables
 Configuration can be customized using environment variables (recommended for sensitive data):
@@ -172,6 +182,36 @@ By default, the scraper processes ALL available brands. To limit scraping to spe
 - Prioritize specific brands: Scrape your most important brands first, then fill in the rest later
 - Testing: Scrape a single brand to test your setup before running a full scrape
 - Incremental updates: Add new brands to your dataset without re-scraping existing ones
+
+### Proxy Rotation
+The scraper supports proxy rotation to avoid rate limiting (429 errors) when scraping from a single IP. **Note: You must provide your own proxy list - the `proxies.txt` file is not included in the repository.**
+
+**Setup:**
+1. Create a `proxies.txt` file in the project root
+2. Add one proxy per line in the format:
+   ```
+   http://ip:port          # HTTP proxy
+   socks4://ip:port        # SOCKS4 proxy
+   socks5://ip:port        # SOCKS5 proxy
+   ip:port                 # Defaults to http://
+   ```
+3. Configure in `.env`:
+   ```bash
+   PROXY_ENABLED=true
+   PROXY_FILE=proxies.txt
+   PROXY_MAX_FAILURES=5
+   ```
+
+**Features:**
+- Round-robin rotation: Different proxy for each request
+- User-Agent rotation: 50+ realistic browser strings
+- Automatic blacklisting: Proxies removed after 5 consecutive failures
+- SOCKS support: HTTP, SOCKS4, and SOCKS5 proxies via `aiohttp-socks`
+- Graceful fallback: Falls back to direct connection when all proxies exhausted
+
+**To disable proxy rotation:**
+- Set `PROXY_ENABLED=false` in `.env`, or
+- Don't create a `proxies.txt` file (scraper will use direct connections)
 
 ## Common Issues
 

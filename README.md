@@ -27,9 +27,11 @@ fipe_scraper/
 ├── config.py                # Configuration settings
 ├── database_models.py       # Database schema (SQLAlchemy models)
 ├── fipe_api_scraper.py     # Main API scraper (RECOMMENDED)
+├── proxy_manager.py        # Proxy rotation manager
 ├── utils.py                # Data export utilities
 ├── README.md               # This file
 ├── .env                    # Environment variables (create this)
+├── proxies.txt            # Proxy list (create this - see Proxy Rotation)
 ├── fipe_data.db           # SQLite database (created automatically)
 └── docs/                   # Documentation & examples
     ├── API_DOCUMENTATION.md    # Complete API reference
@@ -109,6 +111,35 @@ BRAND_FILTER_CODES=6,59  # Audi and Volkswagen
 To find brand codes:
 - See complete list in **[docs/BRAND_CODES.md](docs/BRAND_CODES.md)** (103 brands)
 - Or query your database: `SELECT brand_code, brand_name FROM brands;`
+
+**Proxy Rotation (NEW!):**
+
+To avoid rate limiting (429 errors), the scraper supports proxy rotation. **You must provide your own proxy list.**
+
+1. Create a `proxies.txt` file in the project root with one proxy per line:
+```
+# Supported formats:
+http://192.168.1.1:8080
+socks4://192.168.1.2:1080
+socks5://192.168.1.3:1080
+192.168.1.4:8080          # defaults to http://
+```
+
+2. Configure in `.env`:
+```bash
+PROXY_ENABLED=true
+PROXY_FILE=proxies.txt
+PROXY_MAX_FAILURES=5      # Blacklist proxy after 5 consecutive failures
+```
+
+Features:
+- **Round-robin rotation**: Different proxy for each request
+- **User-Agent rotation**: 50+ realistic browser User-Agent strings
+- **Automatic blacklisting**: Failed proxies removed from pool
+- **SOCKS support**: HTTP, SOCKS4, and SOCKS5 proxies
+- **Graceful fallback**: Falls back to direct connection when all proxies exhausted
+
+**Note:** The `proxies.txt` file is not included in the repository. You can find free proxy lists online or use a paid proxy service for better reliability.
 
 ## 🏃‍♂️ Running the Scraper
 
@@ -307,6 +338,23 @@ Run scraper → Automatically skips Audi and Volkswagen (already complete), scra
 **Solution**:
 - Delete `fipe_data.db` and run `python database_models.py` again
 - Check database URL in `config.py`
+
+### Proxy Errors
+
+**Symptom**: Many "Proxy connection error" or "blacklisted after 5 failures" messages
+
+**Solution**:
+- Your proxies may be dead or slow - update `proxies.txt` with fresh proxies
+- Free proxies are often unreliable - consider using a paid proxy service
+- Increase `PROXY_MAX_FAILURES` in `.env` if proxies are flaky but eventually work
+- Check that proxy format is correct: `http://ip:port` or `socks5://ip:port`
+
+**Symptom**: "All proxies exhausted, falling back to direct connection"
+
+**Solution**:
+- Add more proxies to `proxies.txt`
+- The scraper will continue with direct connections (may hit rate limits)
+- Check logs for which proxies are being blacklisted and why
 
 ## 📈 Analyzing the Data
 
