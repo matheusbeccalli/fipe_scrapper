@@ -24,6 +24,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 import config
+from proxy_manager import ProxyPool
 from database_models import (
     create_database, ReferenceMonth, Brand,
     CarModel, ModelYear, CarPrice
@@ -121,6 +122,19 @@ class FIPEAPIScraper:
         # Database batch buffer
         self.db_batch = []
         self.batch_size = 100  # Save every 100 records
+
+        # Proxy pool for rotation
+        if config.PROXY_CONFIG.get('enabled', True):
+            self.proxy_pool = ProxyPool(
+                max_consecutive_failures=config.PROXY_CONFIG.get('max_consecutive_failures', 5)
+            )
+            proxy_file = config.PROXY_CONFIG.get('proxy_file', 'proxies.txt')
+            proxy_count = self.proxy_pool.load_proxies(proxy_file)
+            if proxy_count == 0:
+                logger.warning("No proxies loaded, will use direct connections")
+        else:
+            self.proxy_pool = None
+            logger.info("Proxy rotation disabled")
 
         logger.info(f"Scraper initialized with max {max_concurrent_requests} concurrent requests")
         logger.info(f"Rate limiting: {self.request_delay}s delay, {self.max_retries} retries")
