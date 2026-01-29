@@ -80,3 +80,10 @@ RESUME_CONFIG = {
     'enable_resume': True,  # If True, skips already scraped combinations
     'checkpoint_file': 'scraping_checkpoint.json',  # File to save progress
 }
+
+# Proxy rotation configuration
+PROXY_CONFIG = {
+    'enabled': os.getenv('PROXY_ENABLED', 'true').lower() == 'true',
+    'proxy_file': os.getenv('PROXY_FILE', 'proxies.txt'),
+    'max_consecutive_failures': int(os.getenv('PROXY_MAX_FAILURES', '5')),
+}
