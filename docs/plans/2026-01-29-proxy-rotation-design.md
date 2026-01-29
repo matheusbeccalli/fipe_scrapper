@@ -7,9 +7,19 @@ Add proxy rotation capability to the FIPE scraper to avoid rate limiting (429 er
 ## Requirements
 
 1. **Proxy Pool & Rotation**: Load proxies from `proxies.txt`, rotate on every request
-2. **User-Agent Rotation**: Rotate through 50+ realistic User-Agent strings
-3. **Error Handling**: Track failures per proxy, blacklist after 5 consecutive failures
-4. **Fallback**: Fall back to direct connection when all proxies exhausted
+2. **Multi-Protocol Support**: Support HTTP, SOCKS4, and SOCKS5 proxies
+3. **User-Agent Rotation**: Rotate through 50+ realistic User-Agent strings
+4. **Error Handling**: Track failures per proxy, blacklist after 5 consecutive failures
+5. **Fallback**: Fall back to direct connection when all proxies exhausted
+
+## Dependencies
+
+New package required:
+```bash
+pip install aiohttp-socks
+```
+
+This enables SOCKS4/SOCKS5 support for aiohttp.
 
 ## Architecture
 
@@ -20,11 +30,12 @@ Add proxy rotation capability to the FIPE scraper to avoid rate limiting (429 er
 │                     ProxyPool                           │
 ├─────────────────────────────────────────────────────────┤
 │ State:                                                  │
-│  - proxies: List[str]         # All loaded proxies      │
+│  - proxies: List[str]         # All loaded proxy URLs   │
 │  - failed_counts: Dict[str, int]  # Failure tracking    │
 │  - blacklist: Set[str]        # Temporarily removed     │
 │  - user_agents: List[str]     # 50+ User-Agent strings  │
 │  - lock: asyncio.Lock         # Thread-safe rotation    │
+│  - current_index: int         # Round-robin position    │
 ├─────────────────────────────────────────────────────────┤
 │ Methods:                                                │
 │  - load_proxies(filepath)     # Parse proxies.txt       │
@@ -33,6 +44,7 @@ Add proxy rotation capability to the FIPE scraper to avoid rate limiting (429 er
 │  - mark_proxy_failed(proxy)   # Track failures          │
 │  - mark_proxy_success(proxy)  # Reset failure count     │
 │  - get_pool_stats() -> Dict   # For logging/monitoring  │
+│  - is_socks_proxy(proxy) -> bool  # Check proxy type    │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -45,15 +57,44 @@ Add proxy rotation capability to the FIPE scraper to avoid rate limiting (429 er
 **`FIPEAPIScraper._make_request`:**
 - Get next proxy via `get_next_proxy()` (returns `None` if all exhausted)
 - Get random User-Agent via `get_random_user_agent()`
-- Pass proxy to `session.post(..., proxy=proxy)`
+- Create appropriate connector based on proxy type:
+  - HTTP proxies: use native `session.post(..., proxy=proxy_url)`
+  - SOCKS proxies: use `ProxyConnector.from_url(proxy_url)` from aiohttp-socks
 - Call `mark_proxy_success(proxy)` on 200 response
 - Call `mark_proxy_failed(proxy)` on 429/520/connection errors
 
+**Connector handling for SOCKS:**
+```python
+from aiohttp_socks import ProxyConnector
+
+if proxy_url.startswith(('socks4://', 'socks5://')):
+    connector = ProxyConnector.from_url(proxy_url)
+    async with aiohttp.ClientSession(connector=connector) as session:
+        # make request
+else:
+    # HTTP proxy - use existing session with proxy= parameter
+    async with session.post(url, proxy=proxy_url, ...) as response:
+        # handle response
+```
+
 ### Proxy Format
 
-- Input (`proxies.txt`): `ip:port` (one per line)
-- Internal/aiohttp: `http://ip:port`
-- No authentication required
+**Input format (`proxies.txt`):** Protocol-prefixed URLs, one per line:
+```
+http://101.132.222.120:80
+http://101.201.225.47:80
+socks4://103.118.44.178:1080
+socks5://145.220.178.0:1080
+```
+
+**Backwards compatibility:** Lines without protocol prefix (e.g., `ip:port`) default to `http://`
+
+**Supported protocols:**
+- `http://` - HTTP proxies (native aiohttp support)
+- `socks4://` - SOCKS4 proxies (via aiohttp-socks)
+- `socks5://` - SOCKS5 proxies (via aiohttp-socks)
+
+**No authentication required** (but format supports `protocol://user:pass@ip:port` if needed later)
 
 ### User-Agent List
 
@@ -105,6 +146,8 @@ Stats logged every 100 requests at INFO level.
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
+| Proxy protocols | HTTP, SOCKS4, SOCKS5 | Maximum flexibility with available proxies |
+| Proxy file format | Single file with protocol prefix | Standard URL format, self-documenting, easy to manage |
 | Proxy authentication | None needed | All proxies are open/public |
 | Failure threshold | 5 consecutive | Conservative - free proxies can be flaky |
 | Fallback behavior | Direct connection | Keeps scraper running if proxies exhausted |
@@ -114,10 +157,12 @@ Stats logged every 100 requests at INFO level.
 
 ## Implementation Tasks
 
-1. Create `proxy_manager.py` with `ProxyPool` class
-2. Add User-Agent list (50+ entries)
-3. Add `PROXY_CONFIG` to `config.py`
-4. Modify `FIPEAPIScraper.__init__` to initialize proxy pool
-5. Modify `FIPEAPIScraper._make_request` to use proxy rotation
-6. Add proxy stats logging
-7. Test with small scrape
+1. Add `aiohttp-socks` to `requirements.txt`
+2. Create `proxy_manager.py` with `ProxyPool` class
+3. Add User-Agent list (50+ entries)
+4. Add `PROXY_CONFIG` to `config.py`
+5. Modify `FIPEAPIScraper.__init__` to initialize proxy pool
+6. Modify `FIPEAPIScraper._make_request` to use proxy rotation (with SOCKS connector support)
+7. Add proxy stats logging
+8. Update `proxies.txt` format to include protocol prefixes
+9. Test with small scrape
