@@ -27,7 +27,8 @@ fipe_scraper/
 ├── config.py                # Configuration settings
 ├── database_models.py       # Database schema (SQLAlchemy models)
 ├── fipe_api_scraper.py     # Main API scraper (RECOMMENDED)
-├── proxy_manager.py        # Proxy rotation manager
+├── proxy_manager.py        # Proxy rotation with worker pool
+├── benchmark_proxies.py    # Test and clean proxy list
 ├── utils.py                # Data export utilities
 ├── README.md               # This file
 ├── .env                    # Environment variables (create this)
@@ -133,11 +134,18 @@ PROXY_MAX_FAILURES=5      # Blacklist proxy after 5 consecutive failures
 ```
 
 Features:
-- **Round-robin rotation**: Different proxy for each request
+- **Worker Pool Architecture**: Each proxy gets a dedicated worker with persistent session
+- **True Parallelism**: All proxies work simultaneously (250 proxies = 250 concurrent requests)
+- **Natural Load Balancing**: Fast proxies handle more requests, slow proxies don't block others
 - **User-Agent rotation**: 50+ realistic browser User-Agent strings
-- **Automatic blacklisting**: Failed proxies removed from pool
 - **SOCKS support**: HTTP, SOCKS4, and SOCKS5 proxies
-- **Graceful fallback**: Falls back to direct connection when all proxies exhausted
+- **Graceful fallback**: Falls back to direct connection when worker pool unavailable
+
+**Benchmark your proxies:**
+```bash
+python benchmark_proxies.py
+```
+This tests all proxies in parallel, removes dead ones, and shows which are faster than direct connection.
 
 **Note:** The `proxies.txt` file is not included in the repository. You can find free proxy lists online or use a paid proxy service for better reliability.
 
@@ -152,25 +160,29 @@ python fipe_api_scraper.py
 
 The scraper will:
 - Connect to the FIPE API
-- Fetch data concurrently using async/await (3 workers by default)
+- Start worker pool (one worker per proxy for true parallelism)
 - Handle rate limiting automatically with retries
 - Save everything to `fipe_data.db`
 - Create a log file `fipe_scraper.log`
 
+You'll see "Worker pool started with X workers" in the logs, confirming parallel operation.
+
 ### Configuration
 
-The scraper uses conservative settings optimized for reliability:
+The scraper automatically scales concurrency based on your proxy list:
+
+- **With proxies**: Creates one worker per proxy (e.g., 250 proxies = 250 concurrent requests)
+- **Without proxies**: Falls back to direct connection with conservative rate limiting
 
 ```python
-# In fipe_api_scraper.py __init__ method
-max_concurrent_requests = 3    # Number of parallel requests
-request_delay = 0.5            # Seconds between requests
-max_retries = 5                # Retry attempts for rate limits
+# In fipe_api_scraper.py
+max_retries = 5    # Retry attempts for failed requests
 ```
 
-You can adjust these in the code if needed:
-- **More speed**: Increase `max_concurrent_requests` to 5 (more 429 errors)
-- **More reliable**: Keep at 3 or reduce to 2
+**For best performance:**
+1. Add proxies to `proxies.txt` (more proxies = more parallelism)
+2. Run `python benchmark_proxies.py` to remove dead/slow proxies
+3. The worker pool automatically balances load across all proxies
 
 ## 📊 Database Schema
 
@@ -231,10 +243,11 @@ The scraper uses these endpoints:
 
 ### Key Features
 - **Async/Await**: Uses `aiohttp` for concurrent HTTP requests
+- **Worker Pool**: Each proxy gets a dedicated worker with persistent session for maximum throughput
 - **Rate Limiting**: Automatic retry with exponential backoff for HTTP 429 errors
-- **Conservative Settings**: 3 concurrent requests, 0.5s delay between requests
+- **Natural Load Balancing**: Fast proxies handle more requests automatically
 - **Checkpoint System**: Saves progress after each model, resume anytime
-- **Detailed Statistics**: Shows success rate, request counts, timing
+- **Detailed Statistics**: Shows success rate, request counts, worker pool stats
 
 See [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) for complete endpoint details.
 
@@ -318,9 +331,10 @@ Run scraper → Automatically skips Audi and Volkswagen (already complete), scra
 **Symptom**: Many "Rate limited (429)" warnings in logs
 
 **Solution**:
-- Reduce `max_concurrent_requests` to 2 or 1
-- Increase `request_delay` to 1.0 second
-- The scraper will retry automatically, but may be slower
+- Add more proxies to distribute load across more IPs
+- Run `python benchmark_proxies.py` to ensure all proxies are working
+- The scraper will retry automatically with exponential backoff
+- Consider using paid proxies for better reliability
 
 ### Connection Errors
 

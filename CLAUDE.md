@@ -106,13 +106,24 @@ The schema uses foreign keys and unique constraints to prevent duplicates and ma
 - Examples of using the data with pandas and SQLAlchemy
 
 **proxy_manager.py** (proxy rotation for rate limit avoidance)
-- `ProxyPool` class: Manages HTTP/SOCKS4/SOCKS5 proxy rotation
-- `load_proxies()`: Loads proxies from file (one per line)
-- `get_next_proxy()`: Round-robin proxy selection with blacklist support
-- `get_random_user_agent()`: Returns random User-Agent from 50+ strings
-- `mark_proxy_success()/mark_proxy_failed()`: Tracks proxy health
-- `is_socks_proxy()`: Detects SOCKS proxies for special handling
-- Automatic blacklisting after 5 consecutive failures
+- `ProxyPool` class: Loads and manages proxy list (used for loading proxies from file)
+- `ProxyWorker` class: A worker that owns a dedicated proxy + persistent aiohttp session
+  - Each worker pulls work from a shared queue and executes requests
+  - Handles SOCKS vs HTTP proxy differences automatically
+  - Includes retry logic with exponential backoff
+- `ProxyWorkerPool` class: Manages a pool of ProxyWorkers for parallel requests
+  - Creates one worker per proxy (e.g., 250 proxies = 250 concurrent workers)
+  - Work items distributed via asyncio.Queue for natural load balancing
+  - Fast proxies handle more requests, slow proxies don't block others
+  - `submit(endpoint, data)`: Submit request to be processed by next available worker
+  - `get_stats()`: Returns worker count, completed/failed requests
+- `WorkItem` dataclass: Encapsulates a single API request (endpoint, data, headers, result future)
+
+**benchmark_proxies.py** (proxy performance testing)
+- Tests all proxies in parallel to measure latency
+- Automatically removes failed proxies from `proxies.txt`
+- Compares proxy speed vs direct connection
+- Run with: `python benchmark_proxies.py`
 
 ### Important Technical Details
 
@@ -131,11 +142,12 @@ The scraper uses the official FIPE REST API at `http://veiculos.fipe.org.br/api/
 - Allows resuming after interruptions without re-scraping completed data
 
 **Rate Limiting & Performance**
-- Adaptive rate limiting (starts at 500ms, adjusts based on errors)
-- Concurrent requests controlled by semaphore (default: 1 concurrent request)
+- **Worker Pool Architecture**: Each proxy gets its own worker with persistent session
+- Concurrency scales automatically with proxy count (250 proxies = 250 concurrent requests)
 - Automatic retry with exponential backoff on 429 (rate limit) and 520 (server overload) errors
 - Batch database commits (100 records per commit) for optimal performance
 - Smart skip: automatically skips brands that already have data for specified months
+- Falls back to direct (non-proxy) requests if worker pool unavailable
 
 ## Configuration Notes
 
@@ -203,11 +215,14 @@ The scraper supports proxy rotation to avoid rate limiting (429 errors) when scr
    ```
 
 **Features:**
-- Round-robin rotation: Different proxy for each request
+- **Worker Pool**: Each proxy gets a dedicated worker with persistent session (connection reuse)
+- **True parallelism**: All proxies work simultaneously (e.g., 250 proxies = 250 concurrent requests)
+- **Natural load balancing**: Fast proxies handle more requests, slow proxies don't block others
 - User-Agent rotation: 50+ realistic browser strings
-- Automatic blacklisting: Proxies removed after 5 consecutive failures
 - SOCKS support: HTTP, SOCKS4, and SOCKS5 proxies via `aiohttp-socks`
-- Graceful fallback: Falls back to direct connection when all proxies exhausted
+- Graceful fallback: Falls back to direct connection when worker pool unavailable
+
+**Performance Tip:** Run `python benchmark_proxies.py` to test your proxies and automatically remove dead ones.
 
 **To disable proxy rotation:**
 - Set `PROXY_ENABLED=false` in `.env`, or
@@ -216,14 +231,19 @@ The scraper supports proxy rotation to avoid rate limiting (429 errors) when scr
 ## Common Issues
 
 **Rate Limiting (429 errors)**: If you see frequent 429 errors:
-- The adaptive rate limiting will automatically slow down
-- Consider reducing `max_concurrent_requests` in `fipe_api_scraper.py:869` (default is 1)
-- Increase `request_delay` in the scraper initialization
+- Workers automatically retry with exponential backoff
+- Consider using more proxies to distribute load
+- Run `python benchmark_proxies.py` to remove slow/dead proxies
 
 **Server Overload (520 errors)**: If you see 520 errors:
 - The FIPE API server is temporarily overloaded
-- The scraper will automatically retry with exponential backoff
-- Adaptive delay will increase to reduce server load
+- Workers automatically retry with backoff
+- This is normal during heavy load periods
+
+**Slow Proxies**: If scraping is slow despite many proxies:
+- Run `python benchmark_proxies.py` to identify and remove slow proxies
+- The worker pool naturally handles this (fast proxies do more work)
+- Consider using paid proxies for better reliability
 
 **API Changes**: If scraping fails with unexpected errors:
 - The FIPE API structure may have changed
@@ -231,6 +251,6 @@ The scraper supports proxy rotation to avoid rate limiting (429 errors) when scr
 - Verify request/response formats in the `_make_request()` method
 
 **Performance**: Full scrape (all 298 months, all brands):
-- Approximately 24-48 hours with default settings (1 concurrent request)
-- Can be sped up by increasing concurrency, but risks rate limiting
+- With 250 proxies: significantly faster due to parallel requests
+- Without proxies: Falls back to direct connection (slower, may hit rate limits)
 - Use date/brand filtering for faster targeted scrapes
