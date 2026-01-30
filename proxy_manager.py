@@ -322,19 +322,22 @@ class ProxyWorker:
                     continue
 
                 if work_item is None:  # Shutdown signal
+                    # Note: No task_done() for shutdown signal - it's not a real work item
+                    # and the pool uses asyncio.gather() to wait for workers, not queue.join()
                     break
 
-                # Execute the request
-                result = await self._execute_request(work_item)
+                try:
+                    # Execute the request
+                    result = await self._execute_request(work_item)
 
-                # Deliver result
-                if not work_item.result.done():
-                    try:
-                        work_item.result.set_result(result)
-                    except Exception as e:
-                        logger.warning(f"Worker {self.worker_id} failed to deliver result: {e}")
-
-                self.work_queue.task_done()
+                    # Deliver result
+                    if not work_item.result.done():
+                        try:
+                            work_item.result.set_result(result)
+                        except Exception as e:
+                            logger.warning(f"Worker {self.worker_id} failed to deliver result: {e}")
+                finally:
+                    self.work_queue.task_done()
         finally:
             await self.stop()
 
@@ -483,7 +486,7 @@ class ProxyWorkerPool:
             raise RuntimeError("Worker pool is not running")
 
         # Create future for result delivery
-        result_future = asyncio.get_event_loop().create_future()
+        result_future = asyncio.get_running_loop().create_future()
 
         # Build headers with random User-Agent
         headers = HEADERS.copy()
