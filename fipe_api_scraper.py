@@ -116,8 +116,7 @@ class FIPEAPIScraper:
         self.db_batch = []
         self.batch_size = 100  # Save every 100 records
 
-        # Proxy pool for rotation (legacy, kept for fallback)
-        self.proxy_pool = None
+        # Worker pool for parallel proxy rotation
         self.worker_pool = None
 
         if config.PROXY_CONFIG.get('enabled', True):
