@@ -86,6 +86,16 @@ USER_AGENTS = [
     "Mozilla/5.0 (iPad; CPU OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Mobile/15E148 Safari/604.1",
 ]
 
+# Default headers for API requests
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'application/json, text/javascript, */*; q=0.01',
+    'Accept-Language': 'en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7',
+    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+    'Origin': 'http://veiculos.fipe.org.br',
+    'Referer': 'http://veiculos.fipe.org.br/',
+}
+
 
 class ProxyPool:
     """
@@ -381,3 +391,127 @@ class ProxyWorker:
         else:
             logger.debug(f"Worker {self.worker_id} got status {response.status}")
             return None
+
+
+class ProxyWorkerPool:
+    """
+    Manages a pool of ProxyWorkers for parallel request processing.
+
+    Usage:
+        pool = ProxyWorkerPool(proxies, api_base_url)
+        await pool.start()
+        result = await pool.submit('/ConsultarMarcas', {'codigoTabelaReferencia': 123})
+        await pool.stop()
+    """
+
+    def __init__(self, proxies: List[str], api_base_url: str,
+                 max_retries: int = 3, queue_size: int = 0):
+        """
+        Initialize the worker pool.
+
+        Args:
+            proxies: List of proxy URLs
+            api_base_url: Base URL for API requests
+            max_retries: Max retries per request
+            queue_size: Max queue size (0 = unlimited)
+        """
+        self.proxies = proxies
+        self.api_base_url = api_base_url
+        self.max_retries = max_retries
+        self.work_queue: asyncio.Queue = asyncio.Queue(maxsize=queue_size)
+        self.workers: List[ProxyWorker] = []
+        self.worker_tasks: List[asyncio.Task] = []
+        self.is_running = False
+        self._user_agents = USER_AGENTS
+
+    async def start(self):
+        """Start all workers."""
+        if self.is_running:
+            return
+
+        self.is_running = True
+
+        # Create a worker for each proxy
+        for i, proxy in enumerate(self.proxies):
+            worker = ProxyWorker(
+                worker_id=i,
+                proxy=proxy,
+                work_queue=self.work_queue,
+                api_base_url=self.api_base_url,
+                max_retries=self.max_retries
+            )
+            self.workers.append(worker)
+
+            # Start worker as background task
+            task = asyncio.create_task(worker.run())
+            self.worker_tasks.append(task)
+
+        logger.info(f"ProxyWorkerPool started with {len(self.workers)} workers")
+
+    async def stop(self):
+        """Stop all workers gracefully."""
+        if not self.is_running:
+            return
+
+        self.is_running = False
+
+        # Send shutdown signal to all workers
+        for _ in self.workers:
+            await self.work_queue.put(None)
+
+        # Wait for all workers to finish
+        if self.worker_tasks:
+            await asyncio.gather(*self.worker_tasks, return_exceptions=True)
+
+        self.workers.clear()
+        self.worker_tasks.clear()
+
+        logger.info("ProxyWorkerPool stopped")
+
+    async def submit(self, endpoint: str, data: Dict = None) -> Optional[Dict]:
+        """
+        Submit a request to be processed by a worker.
+
+        Args:
+            endpoint: API endpoint (e.g., '/ConsultarMarcas')
+            data: POST data
+
+        Returns:
+            JSON response or None on error
+        """
+        if not self.is_running:
+            raise RuntimeError("Worker pool is not running")
+
+        # Create future for result delivery
+        result_future = asyncio.get_event_loop().create_future()
+
+        # Build headers with random User-Agent
+        headers = HEADERS.copy()
+        headers['User-Agent'] = random.choice(self._user_agents)
+
+        # Create work item
+        work_item = WorkItem(
+            endpoint=endpoint,
+            data=data or {},
+            result=result_future,
+            headers=headers
+        )
+
+        # Submit to queue
+        await self.work_queue.put(work_item)
+
+        # Wait for result
+        return await result_future
+
+    def get_stats(self) -> Dict:
+        """Get pool statistics."""
+        total_completed = sum(w.requests_completed for w in self.workers)
+        total_failed = sum(w.requests_failed for w in self.workers)
+
+        return {
+            'workers': len(self.workers),
+            'queue_size': self.work_queue.qsize(),
+            'requests_completed': total_completed,
+            'requests_failed': total_failed,
+            'is_running': self.is_running,
+        }
