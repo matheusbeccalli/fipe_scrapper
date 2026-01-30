@@ -257,213 +257,58 @@ class FIPEAPIScraper:
     async def _make_request(self, session: aiohttp.ClientSession,
                            endpoint: str, data: Dict = None) -> Optional[Dict]:
         """
-        Make an async API request with rate limiting, retry logic, and proxy rotation.
+        Make an async API request.
+
+        Uses worker pool if available, otherwise falls back to direct request.
 
         Args:
-            session: aiohttp session (used for HTTP proxies and direct connections)
+            session: aiohttp session (used only for direct/fallback requests)
             endpoint: API endpoint (e.g., '/ConsultarMarcas')
             data: POST data payload
 
         Returns:
             JSON response or None on error
         """
+        self.stats['total_requests'] += 1
+
+        # Use worker pool if available
+        if self.worker_pool and self.worker_pool.is_running:
+            result = await self.worker_pool.submit(endpoint, data)
+            if result:
+                self.stats['successful_requests'] += 1
+            else:
+                self.stats['failed_requests'] += 1
+            return result
+
+        # Fallback to direct request (no proxy)
         url = f"{API_BASE_URL}{endpoint}"
 
-        # Create a short description of the request for logging
-        request_desc = endpoint
-        if data:
-            if 'codigoMarca' in data:
-                request_desc += f" [brand={data['codigoMarca']}"
-            if 'codigoModelo' in data:
-                request_desc += f", model={data['codigoModelo']}"
-            if 'anoModelo' in data:
-                request_desc += f", year={data['anoModelo']}"
-            if data and ('codigoMarca' in data or 'codigoModelo' in data or 'anoModelo' in data):
-                request_desc += "]"
+        for attempt in range(self.max_retries + 1):
+            try:
+                if attempt > 0:
+                    delay = self.adaptive_delay * (self.backoff_multiplier ** attempt)
+                    await asyncio.sleep(delay)
+                else:
+                    await asyncio.sleep(self.adaptive_delay)
 
-        # Get proxy and User-Agent for this request
-        proxy = None
-        if self.proxy_pool:
-            proxy = await self.proxy_pool.get_next_proxy()
+                async with session.post(url, data=data, headers=HEADERS) as response:
+                    if response.status == 200:
+                        self.stats['successful_requests'] += 1
+                        return await response.json()
+                    elif response.status == 429:
+                        self.stats['rate_limit_hits'] += 1
+                        await asyncio.sleep(self.rate_limit_pause)
+                    elif response.status == 520:
+                        await asyncio.sleep(1.0)
 
-        # Build headers with rotated User-Agent
-        headers = HEADERS.copy()
-        if self.proxy_pool:
-            headers['User-Agent'] = self.proxy_pool.get_random_user_agent()
+            except Exception as e:
+                logger.debug(f"Direct request error on {endpoint}: {e}")
 
-        async with self.semaphore:  # Rate limiting
-            for attempt in range(self.max_retries + 1):
-                try:
-                    self.stats['total_requests'] += 1
+            if attempt < self.max_retries:
+                self.stats['retries'] += 1
 
-                    # Use adaptive delay based on recent errors
-                    if attempt > 0:
-                        delay = self.adaptive_delay * (self.backoff_multiplier ** attempt)
-                        await asyncio.sleep(delay)
-                    else:
-                        # Small delay on first attempt
-                        await asyncio.sleep(self.adaptive_delay)
-
-                    # Make request - handle SOCKS vs HTTP proxies differently
-                    response_data = await self._execute_request(
-                        url, data, headers, proxy, request_desc
-                    )
-
-                    if response_data is not None:
-                        return response_data
-
-                    # Request failed, will retry if attempts remain
-                    if attempt < self.max_retries:
-                        self.stats['retries'] += 1
-                        # Get a fresh proxy for retry
-                        if self.proxy_pool:
-                            proxy = await self.proxy_pool.get_next_proxy()
-                        continue
-                    else:
-                        return None
-
-                except Exception as e:
-                    logger.error(f"Error making request to {request_desc}: {e}")
-                    if self.proxy_pool and proxy:
-                        self.proxy_pool.mark_proxy_failed(proxy)
-                    self.stats['failed_requests'] += 1
-
-                    if attempt < self.max_retries:
-                        self.stats['retries'] += 1
-                        # Get a fresh proxy for retry
-                        if self.proxy_pool:
-                            proxy = await self.proxy_pool.get_next_proxy()
-                        continue
-                    return None
-
-            return None
-
-    async def _execute_request(self, url: str, data: Dict, headers: Dict,
-                               proxy: Optional[str], request_desc: str) -> Optional[Dict]:
-        """
-        Execute a single HTTP request, handling SOCKS and HTTP proxies appropriately.
-
-        Args:
-            url: Full URL to request
-            data: POST data
-            headers: Request headers
-            proxy: Proxy URL or None for direct connection
-
-        Returns:
-            JSON response data or None on error
-        """
-        # Determine if we need a SOCKS connector
-        use_socks = self.proxy_pool and proxy and self.proxy_pool.is_socks_proxy(proxy)
-
-        try:
-            if use_socks:
-                # SOCKS proxy - need to create a new session with ProxyConnector
-                connector = ProxyConnector.from_url(proxy)
-                async with aiohttp.ClientSession(connector=connector) as socks_session:
-                    async with socks_session.post(url, data=data, headers=headers) as response:
-                        return await self._handle_response(response, proxy, request_desc)
-            else:
-                # HTTP proxy or direct connection
-                async with aiohttp.ClientSession() as http_session:
-                    async with http_session.post(url, data=data, headers=headers, proxy=proxy) as response:
-                        return await self._handle_response(response, proxy, request_desc)
-
-        except aiohttp.ClientProxyConnectionError as e:
-            logger.debug(f"Proxy connection error on {request_desc} via {proxy}: {e}")
-            if self.proxy_pool and proxy:
-                self.proxy_pool.mark_proxy_failed(proxy)
-            return None
-        except aiohttp.ClientConnectorError as e:
-            logger.debug(f"Connection error on {request_desc}: {e}")
-            if self.proxy_pool and proxy:
-                self.proxy_pool.mark_proxy_failed(proxy)
-            return None
-        except Exception as e:
-            logger.debug(f"Request error on {request_desc}: {e}")
-            if self.proxy_pool and proxy:
-                self.proxy_pool.mark_proxy_failed(proxy)
-            return None
-
-    async def _handle_response(self, response: aiohttp.ClientResponse,
-                               proxy: Optional[str], request_desc: str) -> Optional[Dict]:
-        """
-        Handle the HTTP response, updating stats and proxy status.
-
-        Args:
-            response: The aiohttp response object
-            proxy: The proxy used (for marking success/failure)
-            request_desc: Description for logging
-
-        Returns:
-            JSON response data or None on error
-        """
-        if response.status == 200:
-            self.stats['successful_requests'] += 1
-
-            # Mark proxy as successful
-            if self.proxy_pool and proxy:
-                self.proxy_pool.mark_proxy_success(proxy)
-
-            # Adaptive: reduce delay on consecutive successes (very slowly)
-            self.consecutive_successes += 1
-            self.recent_520_errors = max(0, self.recent_520_errors - 1)
-            self.recent_429_errors = max(0, self.recent_429_errors - 1)
-
-            # Log success with pattern tracking info
-            logger.debug(f"SUCCESS on {request_desc} (consecutive: {self.consecutive_successes}, delay: {self.adaptive_delay:.3f}s)")
-
-            # Only speed up after many successes and if delay is above minimum
-            if self.consecutive_successes >= self.speedup_threshold and self.adaptive_delay > self.min_delay:
-                old_delay = self.adaptive_delay
-                self.adaptive_delay = max(self.min_delay, self.adaptive_delay * 0.98)  # Reduce by 2%
-                self.consecutive_successes = 0
-                logger.info(f"Speeding up: reduced delay from {old_delay:.3f}s to {self.adaptive_delay:.3f}s")
-
-            return await response.json()
-
-        elif response.status == 429:  # Rate limited
-            self.stats['rate_limit_hits'] += 1
-            self.consecutive_successes = 0
-            self.recent_429_errors += 1
-
-            # Mark proxy as failed on rate limit
-            if self.proxy_pool and proxy:
-                self.proxy_pool.mark_proxy_failed(proxy)
-
-            # Adaptive: back off on rate limit errors
-            if self.recent_429_errors >= self.rate_limit_threshold:
-                old_delay = self.adaptive_delay
-                self.adaptive_delay = min(self.max_delay, self.adaptive_delay * 1.5)
-                logger.warning(f"Rate limited (429) on {request_desc}, increased delay from {old_delay:.3f}s to {self.adaptive_delay:.3f}s")
-                self.recent_429_errors = 0
-
-            logger.debug(f"Rate limited (429) on {request_desc}")
-            return None
-
-        elif response.status == 520:  # Server overload
-            self.consecutive_successes = 0
-            self.recent_520_errors += 1
-
-            # Mark proxy as failed on server overload
-            if self.proxy_pool and proxy:
-                self.proxy_pool.mark_proxy_failed(proxy)
-
-            # Adaptive: back off on 520 errors
-            if self.recent_520_errors >= self.error_threshold:
-                old_delay = self.adaptive_delay
-                self.adaptive_delay = min(self.max_delay, self.adaptive_delay * 1.5)
-                logger.warning(f"Server overload (520) on {request_desc}, increased delay from {old_delay:.3f}s to {self.adaptive_delay:.3f}s")
-                self.recent_520_errors = 0
-
-            logger.debug(f"Server overload (520) on {request_desc}")
-            return None
-
-        else:
-            logger.warning(f"Request failed with status {response.status} for {request_desc}")
-            if self.proxy_pool and proxy:
-                self.proxy_pool.mark_proxy_failed(proxy)
-            self.stats['failed_requests'] += 1
-            return None
+        self.stats['failed_requests'] += 1
+        return None
 
     async def get_reference_months(self, session: aiohttp.ClientSession) -> List[Dict]:
         """Get all available reference months."""
