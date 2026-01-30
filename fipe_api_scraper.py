@@ -24,7 +24,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 import config
-from proxy_manager import ProxyPool
+from proxy_manager import ProxyPool, ProxyWorkerPool
 from aiohttp_socks import ProxyConnector
 from database_models import (
     create_database, ReferenceMonth, Brand,
@@ -87,7 +87,7 @@ class FIPEAPIScraper:
 
         # Concurrency control
         self.semaphore = asyncio.Semaphore(max_concurrent_requests)
-        self.request_delay = 0.5  # 500ms between requests (very conservative)
+        self.request_delay = 0.1  # 100ms between requests (optimized for proxy rotation)
         self.max_concurrent_requests = max_concurrent_requests
 
         # Retry configuration
@@ -95,10 +95,10 @@ class FIPEAPIScraper:
         self.backoff_multiplier = 2.0  # Double wait time on each retry
         self.rate_limit_pause = 5.0  # Longer pause on rate limits
 
-        # Adaptive rate limiting (very conservative thresholds)
-        self.adaptive_delay = 0.5  # Start with 500ms (was 0.3s)
-        self.min_delay = 0.4  # Don't go below 400ms (was 0.15s)
-        self.max_delay = 2.0  # Cap at 2 seconds
+        # Adaptive rate limiting (optimized for proxy rotation)
+        self.adaptive_delay = 0.15  # Start with 150ms
+        self.min_delay = 0.05  # Can go as low as 50ms with proxies
+        self.max_delay = 1.0  # Cap at 1 second
         self.error_threshold = 5  # Number of 520 errors before backing off
         self.rate_limit_threshold = 5  # Number of 429 errors before backing off
         self.recent_520_errors = 0
@@ -124,20 +124,33 @@ class FIPEAPIScraper:
         self.db_batch = []
         self.batch_size = 100  # Save every 100 records
 
-        # Proxy pool for rotation
+        # Proxy pool for rotation (legacy, kept for fallback)
+        self.proxy_pool = None
+        self.worker_pool = None
+
         if config.PROXY_CONFIG.get('enabled', True):
-            self.proxy_pool = ProxyPool(
+            proxy_file = config.PROXY_CONFIG.get('proxy_file', 'proxies.txt')
+
+            # Load proxies using existing ProxyPool for the list
+            temp_pool = ProxyPool(
                 max_consecutive_failures=config.PROXY_CONFIG.get('max_consecutive_failures', 5)
             )
-            proxy_file = config.PROXY_CONFIG.get('proxy_file', 'proxies.txt')
-            proxy_count = self.proxy_pool.load_proxies(proxy_file)
-            if proxy_count == 0:
+            proxy_count = temp_pool.load_proxies(proxy_file)
+
+            if proxy_count > 0:
+                # Create worker pool with loaded proxies
+                self.worker_pool = ProxyWorkerPool(
+                    proxies=temp_pool.proxies,
+                    api_base_url=API_BASE_URL,
+                    max_retries=self.max_retries
+                )
+                logger.info(f"Worker pool configured with {proxy_count} proxies")
+            else:
                 logger.warning("No proxies loaded, will use direct connections")
         else:
-            self.proxy_pool = None
-            logger.info("Proxy rotation disabled")
+            logger.info("Proxy rotation disabled, using direct connections")
 
-        logger.info(f"Scraper initialized with max {max_concurrent_requests} concurrent requests")
+        logger.info(f"Scraper initialized (worker pool: {self.worker_pool is not None})")
         logger.info(f"Rate limiting: {self.request_delay}s delay, {self.max_retries} retries")
         logger.info(f"Database batching: {self.batch_size} records per commit")
 
@@ -727,8 +740,8 @@ class FIPEAPIScraper:
     async def get_model_years(self, session: aiohttp.ClientSession,
                               month_code: int, brand_code: str, model_code: int) -> List[Dict]:
         """Get all available years for a specific model."""
-        # Extra delay specifically for this endpoint (which gets rate limited most)
-        await asyncio.sleep(0.3)  # Add 300ms extra delay before this call (causing most rate limits)
+        # Minimal delay with proxy rotation
+        await asyncio.sleep(0.05)
 
         data = {
             'codigoTabelaReferencia': month_code,
@@ -973,10 +986,9 @@ class FIPEAPIScraper:
 
 async def main():
     """Main entry point."""
-    # Conservative settings to avoid rate limiting
-    # 1 concurrent request with adaptive delay (0.3s - 1.0s)
-    # FIPE API is very strict with rate limits
-    scraper = FIPEAPIScraper(max_concurrent_requests=1)
+    # Optimized for proxy rotation - increase concurrent requests based on proxy count
+    # With 10+ proxies, can safely run 10 concurrent requests
+    scraper = FIPEAPIScraper(max_concurrent_requests=200)
     await scraper.scrape_all_data()
 
 
