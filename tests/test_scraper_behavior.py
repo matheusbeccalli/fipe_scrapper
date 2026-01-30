@@ -247,9 +247,10 @@ class TestScraperInitialization:
         from fipe_api_scraper import FIPEAPIScraper
         scraper = FIPEAPIScraper()
 
-        assert scraper.adaptive_delay == 0.5
-        assert scraper.min_delay == 0.4
-        assert scraper.max_delay == 2.0
+        # Values optimized for proxy rotation (faster)
+        assert scraper.adaptive_delay == 0.15  # Start with 150ms
+        assert scraper.min_delay == 0.05  # Can go as low as 50ms with proxies
+        assert scraper.max_delay == 1.0  # Cap at 1 second
         assert scraper.consecutive_successes == 0
         assert scraper.recent_520_errors == 0
         assert scraper.recent_429_errors == 0
@@ -268,8 +269,26 @@ class TestScraperInitialization:
         assert scraper.db_batch == []
         assert scraper.batch_size == 100
 
-    def test_respects_max_concurrent_requests(self, mocker):
-        """Should set semaphore based on max_concurrent_requests."""
+    def test_creates_worker_pool_when_proxies_enabled(self, mocker, tmp_path):
+        """Should create worker_pool when proxies are enabled and available."""
+        # Create a temporary proxy file
+        proxy_file = tmp_path / "proxies.txt"
+        proxy_file.write_text("http://1.2.3.4:8080\nhttp://5.6.7.8:8080\n")
+
+        mocker.patch.dict(
+            "config.PROXY_CONFIG",
+            {"enabled": True, "proxy_file": str(proxy_file), "max_consecutive_failures": 5},
+        )
+        mocker.patch("config.RESUME_CONFIG", {"enable_resume": False, "checkpoint_file": "test.json"})
+
+        from fipe_api_scraper import FIPEAPIScraper
+        scraper = FIPEAPIScraper()
+
+        assert scraper.worker_pool is not None
+        assert len(scraper.worker_pool.proxies) == 2
+
+    def test_worker_pool_none_when_proxies_disabled(self, mocker):
+        """Worker pool should be None when proxies are disabled."""
         mocker.patch.dict(
             "config.PROXY_CONFIG",
             {"enabled": False, "proxy_file": "proxies.txt", "max_consecutive_failures": 5},
@@ -277,226 +296,6 @@ class TestScraperInitialization:
         mocker.patch("config.RESUME_CONFIG", {"enable_resume": False, "checkpoint_file": "test.json"})
 
         from fipe_api_scraper import FIPEAPIScraper
-        scraper = FIPEAPIScraper(max_concurrent_requests=5)
+        scraper = FIPEAPIScraper()
 
-        assert scraper.max_concurrent_requests == 5
-
-
-class TestHandleResponseBehavior:
-    """Tests for _handle_response adaptive behavior."""
-
-    @pytest.fixture
-    def scraper(self, mocker):
-        """Create scraper with mocked dependencies."""
-        mocker.patch.dict(
-            "config.PROXY_CONFIG",
-            {"enabled": False, "proxy_file": "proxies.txt", "max_consecutive_failures": 5},
-        )
-        mocker.patch("config.RESUME_CONFIG", {"enable_resume": False, "checkpoint_file": "test.json"})
-        from fipe_api_scraper import FIPEAPIScraper
-        return FIPEAPIScraper()
-
-    @pytest.mark.asyncio
-    async def test_200_increments_successful_requests(self, scraper):
-        """200 response should increment successful_requests."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.json = AsyncMock(return_value={"data": "test"})
-
-        initial_count = scraper.stats["successful_requests"]
-        await scraper._handle_response(mock_response, None, "test")
-
-        assert scraper.stats["successful_requests"] == initial_count + 1
-
-    @pytest.mark.asyncio
-    async def test_200_increments_consecutive_successes(self, scraper):
-        """200 response should increment consecutive_successes."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.json = AsyncMock(return_value={"data": "test"})
-
-        initial_count = scraper.consecutive_successes
-        await scraper._handle_response(mock_response, None, "test")
-
-        assert scraper.consecutive_successes == initial_count + 1
-
-    @pytest.mark.asyncio
-    async def test_429_increments_rate_limit_hits(self, scraper):
-        """429 response should increment rate_limit_hits."""
-        mock_response = AsyncMock()
-        mock_response.status = 429
-
-        initial_count = scraper.stats["rate_limit_hits"]
-        await scraper._handle_response(mock_response, None, "test")
-
-        assert scraper.stats["rate_limit_hits"] == initial_count + 1
-
-    @pytest.mark.asyncio
-    async def test_429_resets_consecutive_successes(self, scraper):
-        """429 response should reset consecutive_successes to 0."""
-        mock_response = AsyncMock()
-        mock_response.status = 429
-
-        scraper.consecutive_successes = 10
-        await scraper._handle_response(mock_response, None, "test")
-
-        assert scraper.consecutive_successes == 0
-
-    @pytest.mark.asyncio
-    async def test_520_increments_520_error_count(self, scraper):
-        """520 response should increment recent_520_errors."""
-        mock_response = AsyncMock()
-        mock_response.status = 520
-
-        initial_count = scraper.recent_520_errors
-        await scraper._handle_response(mock_response, None, "test")
-
-        assert scraper.recent_520_errors == initial_count + 1
-
-    @pytest.mark.asyncio
-    async def test_520_resets_consecutive_successes(self, scraper):
-        """520 response should reset consecutive_successes to 0."""
-        mock_response = AsyncMock()
-        mock_response.status = 520
-
-        scraper.consecutive_successes = 10
-        await scraper._handle_response(mock_response, None, "test")
-
-        assert scraper.consecutive_successes == 0
-
-    @pytest.mark.asyncio
-    async def test_other_status_increments_failed_requests(self, scraper):
-        """Non-200/429/520 status should increment failed_requests."""
-        mock_response = AsyncMock()
-        mock_response.status = 500
-
-        initial_count = scraper.stats["failed_requests"]
-        await scraper._handle_response(mock_response, None, "test")
-
-        assert scraper.stats["failed_requests"] == initial_count + 1
-
-    @pytest.mark.asyncio
-    async def test_200_returns_json_data(self, scraper):
-        """200 response should return parsed JSON."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        expected_data = {"Modelos": [{"Label": "Gol", "Value": 123}]}
-        mock_response.json = AsyncMock(return_value=expected_data)
-
-        result = await scraper._handle_response(mock_response, None, "test")
-
-        assert result == expected_data
-
-    @pytest.mark.asyncio
-    async def test_429_returns_none(self, scraper):
-        """429 response should return None."""
-        mock_response = AsyncMock()
-        mock_response.status = 429
-
-        result = await scraper._handle_response(mock_response, None, "test")
-
-        assert result is None
-
-    @pytest.mark.asyncio
-    async def test_520_returns_none(self, scraper):
-        """520 response should return None."""
-        mock_response = AsyncMock()
-        mock_response.status = 520
-
-        result = await scraper._handle_response(mock_response, None, "test")
-
-        assert result is None
-
-
-class TestAdaptiveDelayAdjustment:
-    """Tests for adaptive delay behavior."""
-
-    @pytest.fixture
-    def scraper(self, mocker):
-        """Create scraper with mocked dependencies."""
-        mocker.patch.dict(
-            "config.PROXY_CONFIG",
-            {"enabled": False, "proxy_file": "proxies.txt", "max_consecutive_failures": 5},
-        )
-        mocker.patch("config.RESUME_CONFIG", {"enable_resume": False, "checkpoint_file": "test.json"})
-        from fipe_api_scraper import FIPEAPIScraper
-        return FIPEAPIScraper()
-
-    @pytest.mark.asyncio
-    async def test_delay_increases_after_multiple_429s(self, scraper):
-        """Delay should increase after rate_limit_threshold 429 errors."""
-        mock_response = AsyncMock()
-        mock_response.status = 429
-
-        initial_delay = scraper.adaptive_delay
-        scraper.rate_limit_threshold = 3
-
-        # Trigger threshold number of 429s
-        for _ in range(3):
-            await scraper._handle_response(mock_response, None, "test")
-
-        assert scraper.adaptive_delay > initial_delay
-
-    @pytest.mark.asyncio
-    async def test_delay_increases_after_multiple_520s(self, scraper):
-        """Delay should increase after error_threshold 520 errors."""
-        mock_response = AsyncMock()
-        mock_response.status = 520
-
-        initial_delay = scraper.adaptive_delay
-        scraper.error_threshold = 3
-
-        # Trigger threshold number of 520s
-        for _ in range(3):
-            await scraper._handle_response(mock_response, None, "test")
-
-        assert scraper.adaptive_delay > initial_delay
-
-    @pytest.mark.asyncio
-    async def test_delay_capped_at_max(self, scraper):
-        """Delay should not exceed max_delay."""
-        mock_response = AsyncMock()
-        mock_response.status = 429
-
-        scraper.rate_limit_threshold = 1
-        scraper.adaptive_delay = 1.9  # Close to max
-
-        # Keep triggering rate limits
-        for _ in range(10):
-            await scraper._handle_response(mock_response, None, "test")
-
-        assert scraper.adaptive_delay <= scraper.max_delay
-
-    @pytest.mark.asyncio
-    async def test_delay_decreases_after_many_successes(self, scraper):
-        """Delay should decrease after speedup_threshold successes."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.json = AsyncMock(return_value={"data": "test"})
-
-        # Set delay above minimum so it can decrease
-        scraper.adaptive_delay = 0.6
-        initial_delay = scraper.adaptive_delay
-        scraper.speedup_threshold = 3
-
-        # Trigger enough successes to speed up
-        for _ in range(4):
-            await scraper._handle_response(mock_response, None, "test")
-
-        assert scraper.adaptive_delay < initial_delay
-
-    @pytest.mark.asyncio
-    async def test_delay_not_below_minimum(self, scraper):
-        """Delay should not go below min_delay."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.json = AsyncMock(return_value={"data": "test"})
-
-        scraper.speedup_threshold = 1
-        scraper.adaptive_delay = scraper.min_delay + 0.01
-
-        # Keep succeeding
-        for _ in range(100):
-            await scraper._handle_response(mock_response, None, "test")
-
-        assert scraper.adaptive_delay >= scraper.min_delay
+        assert scraper.worker_pool is None

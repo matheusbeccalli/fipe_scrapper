@@ -4,37 +4,56 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 
-class TestScraperProxyInit:
-    """Tests for scraper's proxy pool initialization."""
+class TestScraperWorkerPoolInit:
+    """Tests for scraper's worker pool initialization."""
 
-    def test_proxy_pool_initialized_when_enabled(self, mocker):
-        """ProxyPool should be created when PROXY_CONFIG.enabled=True."""
+    def test_worker_pool_initialized_when_proxies_available(self, mocker, tmp_path):
+        """WorkerPool should be created when PROXY_CONFIG.enabled=True and proxies exist."""
+        # Create a temporary proxy file with proxies
+        proxy_file = tmp_path / "proxies.txt"
+        proxy_file.write_text("http://1.2.3.4:8080\nhttp://5.6.7.8:8080\n")
+
         mocker.patch.dict(
             "config.PROXY_CONFIG",
-            {"enabled": True, "proxy_file": "proxies.txt", "max_consecutive_failures": 5},
+            {"enabled": True, "proxy_file": str(proxy_file), "max_consecutive_failures": 5},
         )
-
-        # Mock the proxy file to avoid FileNotFoundError
-        mock_pool = MagicMock()
-        mock_pool.load_proxies.return_value = 0
-        mocker.patch("fipe_api_scraper.ProxyPool", return_value=mock_pool)
+        mocker.patch("config.RESUME_CONFIG", {"enable_resume": False, "checkpoint_file": "test.json"})
 
         from fipe_api_scraper import FIPEAPIScraper
 
         scraper = FIPEAPIScraper()
-        assert scraper.proxy_pool is not None
+        assert scraper.worker_pool is not None
+        assert len(scraper.worker_pool.proxies) == 2
 
-    def test_proxy_pool_none_when_disabled(self, mocker):
-        """ProxyPool should be None when PROXY_CONFIG.enabled=False."""
+    def test_worker_pool_none_when_disabled(self, mocker):
+        """WorkerPool should be None when PROXY_CONFIG.enabled=False."""
         mocker.patch.dict(
             "config.PROXY_CONFIG",
             {"enabled": False, "proxy_file": "proxies.txt", "max_consecutive_failures": 5},
         )
+        mocker.patch("config.RESUME_CONFIG", {"enable_resume": False, "checkpoint_file": "test.json"})
 
         from fipe_api_scraper import FIPEAPIScraper
 
         scraper = FIPEAPIScraper()
-        assert scraper.proxy_pool is None
+        assert scraper.worker_pool is None
+
+    def test_worker_pool_none_when_no_proxies_loaded(self, mocker, tmp_path):
+        """WorkerPool should be None when proxy file is empty."""
+        # Create an empty proxy file
+        proxy_file = tmp_path / "proxies.txt"
+        proxy_file.write_text("")
+
+        mocker.patch.dict(
+            "config.PROXY_CONFIG",
+            {"enabled": True, "proxy_file": str(proxy_file), "max_consecutive_failures": 5},
+        )
+        mocker.patch("config.RESUME_CONFIG", {"enable_resume": False, "checkpoint_file": "test.json"})
+
+        from fipe_api_scraper import FIPEAPIScraper
+
+        scraper = FIPEAPIScraper()
+        assert scraper.worker_pool is None
 
 
 class TestProxyConfigStructure:
@@ -63,51 +82,48 @@ class TestProxyConfigStructure:
         assert PROXY_CONFIG["max_consecutive_failures"] > 0
 
 
-class TestMakeRequestWithProxy:
-    """Tests for _make_request proxy integration."""
+class TestWorkerPoolRequestFlow:
+    """Tests for worker pool request flow."""
 
     @pytest.mark.asyncio
-    async def test_uses_proxy_from_pool(self, mocker):
-        """Should use proxy returned by proxy_pool.get_next_proxy()."""
-        mocker.patch.dict(
-            "config.PROXY_CONFIG",
-            {"enabled": True, "proxy_file": "proxies.txt", "max_consecutive_failures": 5},
+    async def test_worker_pool_submit_uses_random_user_agent(self, mocker, tmp_path):
+        """Worker pool submit should use random User-Agent headers."""
+        from proxy_manager import ProxyWorkerPool, USER_AGENTS
+
+        # Create a worker pool with a test proxy
+        pool = ProxyWorkerPool(
+            proxies=["http://1.2.3.4:8080"],
+            api_base_url="http://test.api",
+            max_retries=1
         )
 
-        mock_pool = MagicMock()
-        mock_pool.get_next_proxy = AsyncMock(return_value="http://1.2.3.4:80")
-        mock_pool.get_random_user_agent.return_value = "TestAgent/1.0"
-        mock_pool.is_socks_proxy.return_value = False
-        mock_pool.load_proxies.return_value = 1
-        mocker.patch("fipe_api_scraper.ProxyPool", return_value=mock_pool)
-
-        # We just verify the proxy pool is used, not the actual HTTP request
-        from fipe_api_scraper import FIPEAPIScraper
-
-        scraper = FIPEAPIScraper()
-        assert scraper.proxy_pool is mock_pool
-        assert scraper.proxy_pool.load_proxies.called
+        # Verify that USER_AGENTS list is used for rotation
+        assert len(USER_AGENTS) > 0
+        assert pool._user_agents == USER_AGENTS
 
     @pytest.mark.asyncio
-    async def test_rotates_user_agent(self, mocker):
-        """Should call get_random_user_agent for User-Agent rotation."""
-        mocker.patch.dict(
-            "config.PROXY_CONFIG",
-            {"enabled": True, "proxy_file": "proxies.txt", "max_consecutive_failures": 5},
+    async def test_worker_pool_creates_workers_for_each_proxy(self, mocker):
+        """Worker pool should create one worker per proxy."""
+        from proxy_manager import ProxyWorkerPool
+
+        proxies = ["http://1.2.3.4:8080", "http://5.6.7.8:8080", "socks5://9.10.11.12:1080"]
+        pool = ProxyWorkerPool(
+            proxies=proxies,
+            api_base_url="http://test.api",
+            max_retries=3
         )
 
-        mock_pool = MagicMock()
-        mock_pool.get_next_proxy = AsyncMock(return_value="http://1.2.3.4:80")
-        mock_pool.get_random_user_agent.return_value = "Mozilla/5.0 Test"
-        mock_pool.is_socks_proxy.return_value = False
-        mock_pool.load_proxies.return_value = 1
-        mocker.patch("fipe_api_scraper.ProxyPool", return_value=mock_pool)
+        # Start the pool to create workers
+        await pool.start()
 
-        from fipe_api_scraper import FIPEAPIScraper
-
-        scraper = FIPEAPIScraper()
-        ua = scraper.proxy_pool.get_random_user_agent()
-        assert ua == "Mozilla/5.0 Test"
+        try:
+            assert len(pool.workers) == 3
+            # Verify each worker has the correct proxy
+            for i, worker in enumerate(pool.workers):
+                assert worker.proxy == proxies[i]
+                assert worker.worker_id == i
+        finally:
+            await pool.stop()
 
 
 class TestProxySuccessFailureMarking:
