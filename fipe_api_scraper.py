@@ -65,14 +65,8 @@ class FIPEAPIScraper:
     hundreds of concurrent API calls for dramatically faster scraping.
     """
 
-    def __init__(self, max_concurrent_requests: int = 1):
-        """
-        Initialize the API scraper.
-
-        Args:
-            max_concurrent_requests: Maximum number of concurrent API requests
-                                    (default 1 for stable operation)
-        """
+    def __init__(self):
+        """Initialize the API scraper."""
         # Setup logging
         logger.add(
             config.LOG_CONFIG['log_file'],
@@ -85,10 +79,8 @@ class FIPEAPIScraper:
         self.engine, SessionMaker = create_database(config.DATABASE_URL)
         self.SessionMaker = SessionMaker
 
-        # Concurrency control
-        self.semaphore = asyncio.Semaphore(max_concurrent_requests)
-        self.request_delay = 0.1  # 100ms between requests (optimized for proxy rotation)
-        self.max_concurrent_requests = max_concurrent_requests
+        # Fallback delay for direct requests (when worker pool not available)
+        self.request_delay = 0.1  # 100ms between requests
 
         # Retry configuration
         self.max_retries = 5
@@ -841,9 +833,7 @@ class FIPEAPIScraper:
 
 async def main():
     """Main entry point."""
-    # Optimized for proxy rotation - increase concurrent requests based on proxy count
-    # With 10+ proxies, can safely run 10 concurrent requests
-    scraper = FIPEAPIScraper(max_concurrent_requests=200)
+    scraper = FIPEAPIScraper()
     await scraper.scrape_all_data()
 
 
