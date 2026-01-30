@@ -9,7 +9,11 @@ Manages a pool of HTTP/SOCKS4/SOCKS5 proxies with:
 
 import asyncio
 import random
+from dataclasses import dataclass
 from typing import Optional, Dict, List
+
+import aiohttp
+from aiohttp_socks import ProxyConnector
 from loguru import logger
 
 # 50+ realistic User-Agent strings
@@ -244,3 +248,131 @@ class ProxyPool:
             'blacklisted_proxies': len(self.blacklist),
             'using_direct': len(self.proxies) == 0 or len(self.blacklist) == len(self.proxies),
         }
+
+
+@dataclass
+class WorkItem:
+    """A single API request to be processed by a worker."""
+    endpoint: str
+    data: Dict
+    result: asyncio.Future
+    headers: Dict
+
+
+class ProxyWorker:
+    """
+    A worker that owns a proxy and persistent session.
+    Pulls work items from a queue and executes requests.
+    """
+
+    def __init__(self, worker_id: int, proxy: str, work_queue: asyncio.Queue,
+                 api_base_url: str, max_retries: int = 3):
+        self.worker_id = worker_id
+        self.proxy = proxy
+        self.work_queue = work_queue
+        self.api_base_url = api_base_url
+        self.max_retries = max_retries
+        self.session: Optional[aiohttp.ClientSession] = None
+        self.is_running = False
+        self.requests_completed = 0
+        self.requests_failed = 0
+        self._is_socks = proxy.startswith(('socks4://', 'socks5://'))
+
+    async def start(self):
+        """Create the persistent session and start processing."""
+        if self._is_socks:
+            connector = ProxyConnector.from_url(self.proxy)
+            self.session = aiohttp.ClientSession(connector=connector)
+        else:
+            self.session = aiohttp.ClientSession()
+
+        self.is_running = True
+        logger.debug(f"Worker {self.worker_id} started with proxy {self.proxy[:30]}...")
+
+    async def stop(self):
+        """Stop the worker and close the session."""
+        self.is_running = False
+        if self.session:
+            await self.session.close()
+            self.session = None
+
+    async def run(self):
+        """Main worker loop - pull work items and execute requests."""
+        await self.start()
+
+        try:
+            while self.is_running:
+                try:
+                    # Wait for work with timeout to allow graceful shutdown
+                    work_item = await asyncio.wait_for(
+                        self.work_queue.get(),
+                        timeout=1.0
+                    )
+                except asyncio.TimeoutError:
+                    continue
+
+                if work_item is None:  # Shutdown signal
+                    break
+
+                # Execute the request
+                result = await self._execute_request(work_item)
+
+                # Deliver result
+                if not work_item.result.done():
+                    work_item.result.set_result(result)
+
+                self.work_queue.task_done()
+        finally:
+            await self.stop()
+
+    async def _execute_request(self, work_item: WorkItem) -> Optional[Dict]:
+        """Execute a single request with retries."""
+        url = f"{self.api_base_url}{work_item.endpoint}"
+
+        for attempt in range(self.max_retries):
+            try:
+                if self._is_socks:
+                    # SOCKS: session already has connector, no proxy param
+                    async with self.session.post(
+                        url,
+                        data=work_item.data,
+                        headers=work_item.headers,
+                        timeout=aiohttp.ClientTimeout(total=30)
+                    ) as response:
+                        return await self._handle_response(response)
+                else:
+                    # HTTP: pass proxy as parameter
+                    async with self.session.post(
+                        url,
+                        data=work_item.data,
+                        headers=work_item.headers,
+                        proxy=self.proxy,
+                        timeout=aiohttp.ClientTimeout(total=30)
+                    ) as response:
+                        return await self._handle_response(response)
+
+            except Exception as e:
+                logger.debug(f"Worker {self.worker_id} request failed (attempt {attempt+1}): {e}")
+                if attempt < self.max_retries - 1:
+                    await asyncio.sleep(0.5 * (attempt + 1))
+                continue
+
+        self.requests_failed += 1
+        return None
+
+    async def _handle_response(self, response: aiohttp.ClientResponse) -> Optional[Dict]:
+        """Handle HTTP response, return JSON or None."""
+        if response.status == 200:
+            self.requests_completed += 1
+            return await response.json()
+        elif response.status == 429:
+            logger.warning(f"Worker {self.worker_id} rate limited, backing off")
+            await asyncio.sleep(2.0)
+            return None
+        elif response.status == 520:
+            logger.debug(f"Worker {self.worker_id} got 520, server overload")
+            await asyncio.sleep(1.0)
+            return None
+        else:
+            logger.debug(f"Worker {self.worker_id} got status {response.status}")
+            return None
