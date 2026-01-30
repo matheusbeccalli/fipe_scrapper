@@ -772,6 +772,13 @@ class FIPEAPIScraper:
             logger.info(f"Average requests/second: {self.stats['total_requests']/elapsed_time:.2f}")
             logger.info(f"Success rate: {self.stats['successful_requests']/self.stats['total_requests']*100:.1f}%")
 
+        # Worker pool stats
+        if self.worker_pool:
+            pool_stats = self.worker_pool.get_stats()
+            logger.info(f"Worker pool: {pool_stats['workers']} workers, "
+                       f"{pool_stats['requests_completed']} completed, "
+                       f"{pool_stats['requests_failed']} failed")
+
         logger.info("=" * 80)
 
         # Print database statistics
