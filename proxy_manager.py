@@ -319,7 +319,10 @@ class ProxyWorker:
 
                 # Deliver result
                 if not work_item.result.done():
-                    work_item.result.set_result(result)
+                    try:
+                        work_item.result.set_result(result)
+                    except Exception as e:
+                        logger.warning(f"Worker {self.worker_id} failed to deliver result: {e}")
 
                 self.work_queue.task_done()
         finally:
@@ -327,6 +330,8 @@ class ProxyWorker:
 
     async def _execute_request(self, work_item: WorkItem) -> Optional[Dict]:
         """Execute a single request with retries."""
+        if not self.session:
+            return None
         url = f"{self.api_base_url}{work_item.endpoint}"
 
         for attempt in range(self.max_retries):
