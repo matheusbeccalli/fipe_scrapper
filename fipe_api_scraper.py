@@ -665,6 +665,11 @@ class FIPEAPIScraper:
         # Block Windows from automatically restarting during scraping
         self._block_windows_shutdown(block=True)
 
+        # Start worker pool if configured
+        if self.worker_pool:
+            await self.worker_pool.start()
+            logger.info(f"Worker pool started with {len(self.worker_pool.workers)} workers")
+
         try:
             async with aiohttp.ClientSession() as session:
                 # Get all reference months
@@ -748,6 +753,11 @@ class FIPEAPIScraper:
             logger.info("Scraping completed successfully!")
 
         finally:
+            # Stop worker pool
+            if self.worker_pool:
+                await self.worker_pool.stop()
+                logger.info("Worker pool stopped")
+
             # Always unblock shutdown when done (even if there's an error or interruption)
             self._block_windows_shutdown(block=False)
 
