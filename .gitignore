@@ -3,6 +3,7 @@
 coverage*.html
 start_scraper.sh
 proxies.txt
+.coverage
 
 # Python
 __pycache__/
@@ -66,3 +67,6 @@ Thumbs.db
 # Temp files
 temp/
 tmp/
+
+# Git worktrees
+.worktrees/
