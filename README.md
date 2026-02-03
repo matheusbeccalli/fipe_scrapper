@@ -28,12 +28,19 @@ fipe_scraper/
 ├── database_models.py       # Database schema (SQLAlchemy models)
 ├── fipe_api_scraper.py     # Main API scraper (RECOMMENDED)
 ├── proxy_manager.py        # Proxy rotation with worker pool
-├── benchmark_proxies.py    # Test and clean proxy list
+├── cloudflare_bypass.py    # Cloudflare protection bypass
 ├── utils.py                # Data export utilities
+├── coverage_report.py      # Data coverage analysis
 ├── README.md               # This file
+├── CLAUDE.md               # Claude Code instructions
 ├── .env                    # Environment variables (create this)
 ├── proxies.txt            # Proxy list (create this - see Proxy Rotation)
 ├── fipe_data.db           # SQLite database (created automatically)
+├── scripts/               # Utility scripts
+│   ├── benchmark_proxies.py      # Test and clean proxy list
+│   ├── benchmark_scraper.py      # Compare scraper versions
+│   ├── test_cloudflare_bypass.py # Test Cloudflare bypass
+│   └── debug_proxy_request.py    # Debug proxy requests
 └── docs/                   # Documentation & examples
     ├── API_DOCUMENTATION.md    # Complete API reference
     ├── BRAND_CODES.md          # Brand codes for filtering
@@ -137,13 +144,26 @@ Features:
 - **Worker Pool Architecture**: Each proxy gets a dedicated worker with persistent session
 - **True Parallelism**: All proxies work simultaneously (250 proxies = 250 concurrent requests)
 - **Natural Load Balancing**: Fast proxies handle more requests, slow proxies don't block others
+- **Cloudflare Bypass**: Automatic bypass using cloudscraper25 with cookie injection
 - **User-Agent rotation**: 50+ realistic browser User-Agent strings
 - **SOCKS support**: HTTP, SOCKS4, and SOCKS5 proxies
 - **Graceful fallback**: Falls back to direct connection when worker pool unavailable
 
+**Cloudflare Protection:**
+
+If your proxies are blocked by Cloudflare, install the bypass module:
+```bash
+pip install cloudscraper25
+```
+
+Test the bypass functionality:
+```bash
+python scripts/test_cloudflare_bypass.py
+```
+
 **Benchmark your proxies:**
 ```bash
-python benchmark_proxies.py
+python scripts/benchmark_proxies.py
 ```
 This tests all proxies in parallel, removes dead ones, and shows which are faster than direct connection.
 
@@ -332,9 +352,20 @@ Run scraper → Automatically skips Audi and Volkswagen (already complete), scra
 
 **Solution**:
 - Add more proxies to distribute load across more IPs
-- Run `python benchmark_proxies.py` to ensure all proxies are working
+- Run `python scripts/benchmark_proxies.py` to ensure all proxies are working
 - The scraper will retry automatically with exponential backoff
 - Consider using paid proxies for better reliability
+
+### Cloudflare Blocking (HTTP 403)
+
+**Symptom**: "Blocked by Cloudflare (403)" or "Cloudflare challenge (503)" in logs
+
+**Solution**:
+- Install the bypass module: `pip install cloudscraper25`
+- Test bypass: `python scripts/test_cloudflare_bypass.py`
+- The scraper automatically obtains and injects clearance cookies
+- Some proxy IPs may be permanently blocked - try different proxies
+- Direct connections usually work if proxies are blocked
 
 ### Connection Errors
 
@@ -359,9 +390,10 @@ Run scraper → Automatically skips Audi and Volkswagen (already complete), scra
 
 **Solution**:
 - Your proxies may be dead or slow - update `proxies.txt` with fresh proxies
+- Run `python scripts/benchmark_proxies.py` to test and clean your proxy list
 - Free proxies are often unreliable - consider using a paid proxy service
 - Increase `PROXY_MAX_FAILURES` in `.env` if proxies are flaky but eventually work
-- Check that proxy format is correct: `http://ip:port` or `socks5://ip:port`
+- Check that proxy format is correct: `username:password@ip:port` or `socks5://ip:port`
 
 **Symptom**: "All proxies exhausted, falling back to direct connection"
 

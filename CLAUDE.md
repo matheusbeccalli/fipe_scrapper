@@ -111,19 +111,44 @@ The schema uses foreign keys and unique constraints to prevent duplicates and ma
   - Each worker pulls work from a shared queue and executes requests
   - Handles SOCKS vs HTTP proxy differences automatically
   - Includes retry logic with exponential backoff
+  - Injects Cloudflare bypass cookies into requests
 - `ProxyWorkerPool` class: Manages a pool of ProxyWorkers for parallel requests
   - Creates one worker per proxy (e.g., 250 proxies = 250 concurrent workers)
   - Work items distributed via asyncio.Queue for natural load balancing
   - Fast proxies handle more requests, slow proxies don't block others
   - `submit(endpoint, data)`: Submit request to be processed by next available worker
   - `get_stats()`: Returns worker count, completed/failed requests
-- `WorkItem` dataclass: Encapsulates a single API request (endpoint, data, headers, result future)
+- `WorkItem` dataclass: Encapsulates a single API request (endpoint, data, headers, cookies, result future)
 
-**benchmark_proxies.py** (proxy performance testing)
+**cloudflare_bypass.py** (Cloudflare protection bypass)
+- `CloudflareBypass` class: Manages Cloudflare bypass sessions using cloudscraper25
+  - Obtains clearance cookies by solving Cloudflare JavaScript challenges
+  - Maintains multiple sessions for redundancy (round-robin)
+  - Auto-refreshes sessions every 4 minutes (before 5-minute expiry)
+  - Runs in background thread to not block async code
+- `CloudflareSession` dataclass: Holds cookies, user-agent, and metadata
+- Integrated with ProxyWorkerPool to inject cookies into all requests
+
+### Utility Scripts (scripts/ folder)
+
+**scripts/benchmark_proxies.py** (proxy performance testing)
 - Tests all proxies in parallel to measure latency
 - Automatically removes failed proxies from `proxies.txt`
 - Compares proxy speed vs direct connection
-- Run with: `python benchmark_proxies.py`
+- Run with: `python scripts/benchmark_proxies.py`
+
+**scripts/test_cloudflare_bypass.py** (Cloudflare bypass testing)
+- Tests direct connection, cloudscraper, and proxy combinations
+- Verifies Cloudflare bypass cookies work with aiohttp
+- Run with: `python scripts/test_cloudflare_bypass.py`
+
+**scripts/benchmark_scraper.py** (scraper version comparison)
+- Compares performance between scraper versions
+- Run with: `python scripts/benchmark_scraper.py`
+
+**scripts/debug_proxy_request.py** (proxy debugging)
+- Debug tool to compare proxy vs direct request headers
+- Run with: `python scripts/debug_proxy_request.py`
 
 ### Important Technical Details
 
@@ -148,6 +173,13 @@ The scraper uses the official FIPE REST API at `http://veiculos.fipe.org.br/api/
 - Batch database commits (100 records per commit) for optimal performance
 - Smart skip: automatically skips brands that already have data for specified months
 - Falls back to direct (non-proxy) requests if worker pool unavailable
+
+**Cloudflare Bypass**
+- Uses `cloudscraper25` to solve Cloudflare JavaScript challenges
+- Obtains clearance cookies that are injected into all proxy requests
+- Sessions auto-refresh every 4 minutes in the background
+- Handles 403 (blocked) and 503 (challenge page) responses
+- Falls back gracefully if cloudscraper25 is not installed
 
 ## Configuration Notes
 
@@ -202,10 +234,13 @@ The scraper supports proxy rotation to avoid rate limiting (429 errors) when scr
 1. Create a `proxies.txt` file in the project root
 2. Add one proxy per line in the format:
    ```
-   http://ip:port          # HTTP proxy
-   socks4://ip:port        # SOCKS4 proxy
-   socks5://ip:port        # SOCKS5 proxy
-   ip:port                 # Defaults to http://
+   ip:port                              # HTTP proxy (no auth)
+   username:password@ip:port            # HTTP proxy with auth
+   http://ip:port                       # HTTP proxy (explicit)
+   http://username:password@ip:port     # HTTP proxy with auth (explicit)
+   socks4://ip:port                     # SOCKS4 proxy
+   socks5://ip:port                     # SOCKS5 proxy
+   socks5://username:password@ip:port   # SOCKS5 proxy with auth
    ```
 3. Configure in `.env`:
    ```bash
@@ -222,7 +257,7 @@ The scraper supports proxy rotation to avoid rate limiting (429 errors) when scr
 - SOCKS support: HTTP, SOCKS4, and SOCKS5 proxies via `aiohttp-socks`
 - Graceful fallback: Falls back to direct connection when worker pool unavailable
 
-**Performance Tip:** Run `python benchmark_proxies.py` to test your proxies and automatically remove dead ones.
+**Performance Tip:** Run `python scripts/benchmark_proxies.py` to test your proxies and automatically remove dead ones.
 
 **To disable proxy rotation:**
 - Set `PROXY_ENABLED=false` in `.env`, or
@@ -233,7 +268,13 @@ The scraper supports proxy rotation to avoid rate limiting (429 errors) when scr
 **Rate Limiting (429 errors)**: If you see frequent 429 errors:
 - Workers automatically retry with exponential backoff
 - Consider using more proxies to distribute load
-- Run `python benchmark_proxies.py` to remove slow/dead proxies
+- Run `python scripts/benchmark_proxies.py` to remove slow/dead proxies
+
+**Cloudflare Blocking (403 errors)**: If proxies are blocked by Cloudflare:
+- Run `python scripts/test_cloudflare_bypass.py` to test bypass functionality
+- Ensure `cloudscraper25` is installed: `pip install cloudscraper25`
+- The bypass automatically obtains and injects clearance cookies
+- Some proxy IPs may be permanently blocked by Cloudflare
 
 **Server Overload (520 errors)**: If you see 520 errors:
 - The FIPE API server is temporarily overloaded
@@ -241,7 +282,7 @@ The scraper supports proxy rotation to avoid rate limiting (429 errors) when scr
 - This is normal during heavy load periods
 
 **Slow Proxies**: If scraping is slow despite many proxies:
-- Run `python benchmark_proxies.py` to identify and remove slow proxies
+- Run `python scripts/benchmark_proxies.py` to identify and remove slow proxies
 - The worker pool naturally handles this (fast proxies do more work)
 - Consider using paid proxies for better reliability
 
