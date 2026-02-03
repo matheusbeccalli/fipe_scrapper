@@ -279,17 +279,23 @@ class ProxyWorker:
     """
 
     def __init__(self, worker_id: int, proxy: str, work_queue: asyncio.Queue,
-                 api_base_url: str, max_retries: int = 3):
+                 api_base_url: str, max_retries: int = 3,
+                 max_consecutive_failures: int = 0,
+                 on_disabled_callback: Optional[callable] = None):
         self.worker_id = worker_id
         self.proxy = proxy
         self.work_queue = work_queue
         self.api_base_url = api_base_url
         self.max_retries = max_retries
+        self.max_consecutive_failures = max_consecutive_failures  # 0 = disabled
+        self.on_disabled_callback = on_disabled_callback
         self.session: Optional[aiohttp.ClientSession] = None
         self.is_running = False
         self.requests_completed = 0
         self.requests_failed = 0
+        self.consecutive_failures = 0
         self._is_socks = proxy.startswith(('socks4://', 'socks5://'))
+        self._current_work_item: Optional[WorkItem] = None  # Track current work item for requeue
 
     async def start(self):
         """Create the persistent session and start processing."""
@@ -330,16 +336,20 @@ class ProxyWorker:
                     break
 
                 try:
+                    # Track current work item for potential requeue on disable
+                    self._current_work_item = work_item
+                    
                     # Execute the request
                     result = await self._execute_request(work_item)
 
-                    # Deliver result
+                    # Deliver result (only if not requeued)
                     if not work_item.result.done():
                         try:
                             work_item.result.set_result(result)
                         except Exception as e:
                             logger.warning(f"Worker {self.worker_id} failed to deliver result: {e}")
                 finally:
+                    self._current_work_item = None
                     self.work_queue.task_done()
         finally:
             await self.stop()
@@ -395,11 +405,29 @@ class ProxyWorker:
         """Handle HTTP response, return JSON or None."""
         if response.status == 200:
             self.requests_completed += 1
+            self.consecutive_failures = 0  # Reset on success
             return await response.json()
         elif response.status == 403:
-            # Cloudflare block - log and return None
-            logger.warning(f"Worker {self.worker_id} blocked by Cloudflare (403)")
+            # Cloudflare block - track consecutive failures
             self.requests_failed += 1
+            self.consecutive_failures += 1
+            
+            # Check if we should disable this worker
+            if self.max_consecutive_failures > 0 and self.consecutive_failures >= self.max_consecutive_failures:
+                logger.warning(
+                    f"Worker {self.worker_id} disabled: {self.consecutive_failures} consecutive 403 errors "
+                    f"(proxy likely blocked by Cloudflare)"
+                )
+                self.is_running = False
+                # Requeue current work item so another worker can handle it
+                if self._current_work_item and not self._current_work_item.result.done():
+                    await self.work_queue.put(self._current_work_item)
+                    logger.debug(f"Worker {self.worker_id} requeued work item for another worker")
+                if self.on_disabled_callback:
+                    await self.on_disabled_callback(self.proxy)
+                return None
+            
+            logger.warning(f"Worker {self.worker_id} blocked by Cloudflare (403) [{self.consecutive_failures}/{self.max_consecutive_failures or '∞'}]")
             await asyncio.sleep(1.0)
             return None
         elif response.status == 429:
@@ -411,7 +439,22 @@ class ProxyWorker:
             await asyncio.sleep(1.0)
             return None
         elif response.status == 503:
-            # Cloudflare challenge page
+            # Cloudflare challenge page - also track as potential block
+            self.requests_failed += 1
+            self.consecutive_failures += 1
+            if self.max_consecutive_failures > 0 and self.consecutive_failures >= self.max_consecutive_failures:
+                logger.warning(
+                    f"Worker {self.worker_id} disabled: {self.consecutive_failures} consecutive failures "
+                    f"(503 challenge pages)"
+                )
+                self.is_running = False
+                # Requeue current work item so another worker can handle it
+                if self._current_work_item and not self._current_work_item.result.done():
+                    await self.work_queue.put(self._current_work_item)
+                    logger.debug(f"Worker {self.worker_id} requeued work item for another worker")
+                if self.on_disabled_callback:
+                    await self.on_disabled_callback(self.proxy)
+                return None
             logger.warning(f"Worker {self.worker_id} got Cloudflare challenge (503)")
             await asyncio.sleep(2.0)
             return None
@@ -433,7 +476,9 @@ class ProxyWorkerPool:
 
     def __init__(self, proxies: List[str], api_base_url: str,
                  max_retries: int = 3, queue_size: int = 0,
-                 cloudflare_bypass=None):
+                 cloudflare_bypass=None, max_workers: int = 0,
+                 max_consecutive_failures: int = 0,
+                 proxy_file: Optional[str] = None):
         """
         Initialize the worker pool.
 
@@ -443,10 +488,21 @@ class ProxyWorkerPool:
             max_retries: Max retries per request
             queue_size: Max queue size (0 = unlimited)
             cloudflare_bypass: Optional CloudflareBypass instance for Cloudflare protection
+            max_workers: Max number of concurrent workers (0 = unlimited, use all proxies)
+            max_consecutive_failures: Disable worker after N consecutive 403/503 errors (0 = disabled)
+            proxy_file: Path to proxy file for automatic removal of blocked proxies
         """
+        # Limit proxies if max_workers is set
+        if max_workers > 0 and len(proxies) > max_workers:
+            logger.info(f"Limiting workers from {len(proxies)} to {max_workers} (max_workers setting)")
+            proxies = proxies[:max_workers]
+
         self.proxies = proxies
         self.api_base_url = api_base_url
         self.max_retries = max_retries
+        self.max_consecutive_failures = max_consecutive_failures
+        self.proxy_file = proxy_file
+        self._removed_proxies: set = set()  # Track removed proxies to avoid duplicate removals
         self.work_queue: asyncio.Queue = asyncio.Queue(maxsize=queue_size)
         self.workers: List[ProxyWorker] = []
         self.worker_tasks: List[asyncio.Task] = []
@@ -468,7 +524,9 @@ class ProxyWorkerPool:
                 proxy=proxy,
                 work_queue=self.work_queue,
                 api_base_url=self.api_base_url,
-                max_retries=self.max_retries
+                max_retries=self.max_retries,
+                max_consecutive_failures=self.max_consecutive_failures,
+                on_disabled_callback=self._on_worker_disabled if self.proxy_file else None,
             )
             self.workers.append(worker)
 
@@ -549,11 +607,50 @@ class ProxyWorkerPool:
         """Get pool statistics."""
         total_completed = sum(w.requests_completed for w in self.workers)
         total_failed = sum(w.requests_failed for w in self.workers)
+        active_workers = sum(1 for w in self.workers if w.is_running)
+        disabled_workers = len(self.workers) - active_workers
 
         return {
             'workers': len(self.workers),
+            'active_workers': active_workers,
+            'disabled_workers': disabled_workers,
             'queue_size': self.work_queue.qsize(),
             'requests_completed': total_completed,
             'requests_failed': total_failed,
             'is_running': self.is_running,
         }
+
+    async def _on_worker_disabled(self, proxy: str):
+        """Called when a worker is disabled due to consecutive failures."""
+        if not self.proxy_file or proxy in self._removed_proxies:
+            return
+        
+        self._removed_proxies.add(proxy)
+        
+        try:
+            # Read current proxies from file
+            with open(self.proxy_file, 'r') as f:
+                lines = f.readlines()
+            
+            # Filter out the blocked proxy
+            # Handle various proxy formats (with/without protocol prefix)
+            new_lines = []
+            for line in lines:
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                # Normalize for comparison: the proxy in memory might have protocol prefix
+                # while file might not, or vice versa
+                if stripped == proxy or f"http://{stripped}" == proxy or stripped == proxy.replace("http://", ""):
+                    logger.info(f"Removing blocked proxy from {self.proxy_file}: {stripped[:30]}...")
+                    continue
+                new_lines.append(line)
+            
+            # Write back
+            with open(self.proxy_file, 'w') as f:
+                f.writelines(new_lines)
+                
+            logger.info(f"Proxy file updated: {len(lines)} -> {len(new_lines)} proxies")
+            
+        except Exception as e:
+            logger.error(f"Failed to remove proxy from file: {e}")

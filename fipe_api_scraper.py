@@ -147,13 +147,18 @@ class FIPEAPIScraper:
                     logger.warning("cloudscraper25 not installed, Cloudflare bypass disabled")
                 
                 # Create worker pool with loaded proxies
+                max_concurrent = config.PROXY_CONFIG.get('max_concurrent_connections', 0)
                 self.worker_pool = ProxyWorkerPool(
                     proxies=temp_pool.proxies,
                     api_base_url=API_BASE_URL,
                     max_retries=self.max_retries,
                     cloudflare_bypass=self.cloudflare_bypass,
+                    max_workers=max_concurrent,
+                    max_consecutive_failures=config.PROXY_CONFIG.get('max_consecutive_failures', 5),
+                    proxy_file=config.PROXY_CONFIG.get('proxy_file'),
                 )
-                logger.info(f"Worker pool configured with {proxy_count} proxies")
+                effective_workers = min(proxy_count, max_concurrent) if max_concurrent > 0 else proxy_count
+                logger.info(f"Worker pool configured with {effective_workers} workers (from {proxy_count} proxies)")
             else:
                 logger.warning("No proxies loaded, will use direct connections")
         else:
