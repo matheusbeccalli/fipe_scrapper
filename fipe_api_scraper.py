@@ -25,6 +25,7 @@ from sqlalchemy.exc import IntegrityError
 
 import config
 from proxy_manager import ProxyPool, ProxyWorkerPool
+from cloudflare_bypass import CloudflareBypass, CLOUDSCRAPER_AVAILABLE
 from aiohttp_socks import ProxyConnector
 from database_models import (
     create_database, ReferenceMonth, Brand,
@@ -118,6 +119,8 @@ class FIPEAPIScraper:
 
         # Worker pool for parallel proxy rotation
         self.worker_pool = None
+        self.cloudflare_bypass = None
+        self._proxy_list = []  # Store for CloudflareBypass initialization
 
         if config.PROXY_CONFIG.get('enabled', True):
             proxy_file = config.PROXY_CONFIG.get('proxy_file', 'proxies.txt')
@@ -129,11 +132,26 @@ class FIPEAPIScraper:
             proxy_count = temp_pool.load_proxies(proxy_file)
 
             if proxy_count > 0:
+                self._proxy_list = temp_pool.proxies.copy()
+                
+                # Create CloudflareBypass if available (will be started later)
+                if CLOUDSCRAPER_AVAILABLE:
+                    self.cloudflare_bypass = CloudflareBypass(
+                        target_url=API_BASE_URL,
+                        proxies=self._proxy_list[:5],  # Use first 5 proxies for bypass
+                        refresh_interval=240.0,  # Refresh every 4 minutes
+                        max_sessions=3,
+                    )
+                    logger.info("CloudflareBypass configured (will start with worker pool)")
+                else:
+                    logger.warning("cloudscraper25 not installed, Cloudflare bypass disabled")
+                
                 # Create worker pool with loaded proxies
                 self.worker_pool = ProxyWorkerPool(
                     proxies=temp_pool.proxies,
                     api_base_url=API_BASE_URL,
-                    max_retries=self.max_retries
+                    max_retries=self.max_retries,
+                    cloudflare_bypass=self.cloudflare_bypass,
                 )
                 logger.info(f"Worker pool configured with {proxy_count} proxies")
             else:
@@ -656,6 +674,11 @@ class FIPEAPIScraper:
         # Block Windows from automatically restarting during scraping
         self._block_windows_shutdown(block=True)
 
+        # Start Cloudflare bypass if configured
+        if self.cloudflare_bypass:
+            await self.cloudflare_bypass.start()
+            logger.info(f"Cloudflare bypass started with {self.cloudflare_bypass.session_count} sessions")
+
         # Start worker pool if configured
         if self.worker_pool:
             await self.worker_pool.start()
@@ -748,6 +771,11 @@ class FIPEAPIScraper:
             if self.worker_pool:
                 await self.worker_pool.stop()
                 logger.info("Worker pool stopped")
+
+            # Stop Cloudflare bypass
+            if self.cloudflare_bypass:
+                await self.cloudflare_bypass.stop()
+                logger.info("Cloudflare bypass stopped")
 
             # Always unblock shutdown when done (even if there's an error or interruption)
             self._block_windows_shutdown(block=False)

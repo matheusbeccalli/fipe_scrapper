@@ -127,6 +127,8 @@ class ProxyPool:
         Expected format: one proxy per line
         - With protocol: http://ip:port, socks4://ip:port, socks5://ip:port
         - Without protocol (defaults to http): ip:port
+        - Authenticated: username:password@ip:port (defaults to http)
+        - Authenticated with protocol: socks5://username:password@ip:port
 
         Args:
             filepath: Path to the proxies file
@@ -267,6 +269,7 @@ class WorkItem:
     data: Dict
     result: asyncio.Future
     headers: Dict
+    cookies: Optional[Dict] = None  # Cloudflare bypass cookies
 
 
 class ProxyWorker:
@@ -347,14 +350,24 @@ class ProxyWorker:
             return None
         url = f"{self.api_base_url}{work_item.endpoint}"
 
+        # Build cookie header string if cookies provided
+        cookie_header = None
+        if work_item.cookies:
+            cookie_header = "; ".join(f"{k}={v}" for k, v in work_item.cookies.items())
+
         for attempt in range(self.max_retries):
             try:
+                # Merge headers with cookie if present
+                headers = work_item.headers.copy()
+                if cookie_header:
+                    headers['Cookie'] = cookie_header
+
                 if self._is_socks:
                     # SOCKS: session already has connector, no proxy param
                     async with self.session.post(
                         url,
                         data=work_item.data,
-                        headers=work_item.headers,
+                        headers=headers,
                         timeout=aiohttp.ClientTimeout(total=30)
                     ) as response:
                         return await self._handle_response(response)
@@ -363,7 +376,7 @@ class ProxyWorker:
                     async with self.session.post(
                         url,
                         data=work_item.data,
-                        headers=work_item.headers,
+                        headers=headers,
                         proxy=self.proxy,
                         timeout=aiohttp.ClientTimeout(total=30)
                     ) as response:
@@ -383,6 +396,12 @@ class ProxyWorker:
         if response.status == 200:
             self.requests_completed += 1
             return await response.json()
+        elif response.status == 403:
+            # Cloudflare block - log and return None
+            logger.warning(f"Worker {self.worker_id} blocked by Cloudflare (403)")
+            self.requests_failed += 1
+            await asyncio.sleep(1.0)
+            return None
         elif response.status == 429:
             logger.warning(f"Worker {self.worker_id} rate limited, backing off")
             await asyncio.sleep(2.0)
@@ -390,6 +409,11 @@ class ProxyWorker:
         elif response.status == 520:
             logger.debug(f"Worker {self.worker_id} got 520, server overload")
             await asyncio.sleep(1.0)
+            return None
+        elif response.status == 503:
+            # Cloudflare challenge page
+            logger.warning(f"Worker {self.worker_id} got Cloudflare challenge (503)")
+            await asyncio.sleep(2.0)
             return None
         else:
             logger.debug(f"Worker {self.worker_id} got status {response.status}")
@@ -408,7 +432,8 @@ class ProxyWorkerPool:
     """
 
     def __init__(self, proxies: List[str], api_base_url: str,
-                 max_retries: int = 3, queue_size: int = 0):
+                 max_retries: int = 3, queue_size: int = 0,
+                 cloudflare_bypass=None):
         """
         Initialize the worker pool.
 
@@ -417,6 +442,7 @@ class ProxyWorkerPool:
             api_base_url: Base URL for API requests
             max_retries: Max retries per request
             queue_size: Max queue size (0 = unlimited)
+            cloudflare_bypass: Optional CloudflareBypass instance for Cloudflare protection
         """
         self.proxies = proxies
         self.api_base_url = api_base_url
@@ -426,6 +452,7 @@ class ProxyWorkerPool:
         self.worker_tasks: List[asyncio.Task] = []
         self.is_running = False
         self._user_agents = USER_AGENTS
+        self._cloudflare_bypass = cloudflare_bypass
 
     async def start(self):
         """Start all workers."""
@@ -490,14 +517,26 @@ class ProxyWorkerPool:
 
         # Build headers with random User-Agent
         headers = HEADERS.copy()
-        headers['User-Agent'] = random.choice(self._user_agents)
+        
+        # Get Cloudflare bypass cookies and user-agent if available
+        cookies = None
+        if self._cloudflare_bypass and self._cloudflare_bypass.has_valid_session():
+            cookies, cf_user_agent = self._cloudflare_bypass.get_session()
+            if cf_user_agent:
+                # Use the same user-agent that obtained the cookies
+                headers['User-Agent'] = cf_user_agent
+            else:
+                headers['User-Agent'] = random.choice(self._user_agents)
+        else:
+            headers['User-Agent'] = random.choice(self._user_agents)
 
         # Create work item
         work_item = WorkItem(
             endpoint=endpoint,
             data=data or {},
             result=result_future,
-            headers=headers
+            headers=headers,
+            cookies=cookies
         )
 
         # Submit to queue
