@@ -112,12 +112,15 @@ The schema uses foreign keys and unique constraints to prevent duplicates and ma
   - Handles SOCKS vs HTTP proxy differences automatically
   - Includes retry logic with exponential backoff
   - Injects Cloudflare bypass cookies into requests
+  - **Auto-disable**: Tracks consecutive 403/503 failures, disables worker after threshold (default: 5)
+  - **Work requeue**: When disabled, requeues current work item so another worker can retry
 - `ProxyWorkerPool` class: Manages a pool of ProxyWorkers for parallel requests
   - Creates one worker per proxy (e.g., 250 proxies = 250 concurrent workers)
   - Work items distributed via asyncio.Queue for natural load balancing
   - Fast proxies handle more requests, slow proxies don't block others
   - `submit(endpoint, data)`: Submit request to be processed by next available worker
-  - `get_stats()`: Returns worker count, completed/failed requests
+  - `get_stats()`: Returns worker count, active/disabled workers, completed/failed requests
+  - **Auto-removal**: Removes blocked proxies from `proxies.txt` automatically
 - `WorkItem` dataclass: Encapsulates a single API request (endpoint, data, headers, cookies, result future)
 
 **cloudflare_bypass.py** (Cloudflare protection bypass)
@@ -253,6 +256,9 @@ The scraper supports proxy rotation to avoid rate limiting (429 errors) when scr
 - **Worker Pool**: Each proxy gets a dedicated worker with persistent session (connection reuse)
 - **True parallelism**: All proxies work simultaneously (e.g., 250 proxies = 250 concurrent requests)
 - **Natural load balancing**: Fast proxies handle more requests, slow proxies don't block others
+- **Auto-disable**: Workers disabled after consecutive 403/503 failures (default: 5)
+- **Auto-removal**: Blocked proxies automatically removed from `proxies.txt`
+- **Work requeue**: In-flight requests requeued when worker disabled (not lost)
 - User-Agent rotation: 50+ realistic browser strings
 - SOCKS support: HTTP, SOCKS4, and SOCKS5 proxies via `aiohttp-socks`
 - Graceful fallback: Falls back to direct connection when worker pool unavailable
@@ -271,6 +277,9 @@ The scraper supports proxy rotation to avoid rate limiting (429 errors) when scr
 - Run `python scripts/benchmark_proxies.py` to remove slow/dead proxies
 
 **Cloudflare Blocking (403 errors)**: If proxies are blocked by Cloudflare:
+- Workers auto-disable after 5 consecutive 403/503 errors (configurable via `PROXY_MAX_FAILURES`)
+- Blocked proxies are automatically removed from `proxies.txt`
+- In-flight requests are requeued to other workers (not lost)
 - Run `python scripts/test_cloudflare_bypass.py` to test bypass functionality
 - Ensure `cloudscraper25` is installed: `pip install cloudscraper25`
 - The bypass automatically obtains and injects clearance cookies

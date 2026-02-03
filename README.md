@@ -144,6 +144,9 @@ Features:
 - **Worker Pool Architecture**: Each proxy gets a dedicated worker with persistent session
 - **True Parallelism**: All proxies work simultaneously (250 proxies = 250 concurrent requests)
 - **Natural Load Balancing**: Fast proxies handle more requests, slow proxies don't block others
+- **Auto-Disable**: Workers disabled after consecutive 403/503 failures (configurable threshold)
+- **Auto-Removal**: Blocked proxies automatically removed from `proxies.txt`
+- **Work Requeue**: In-flight requests requeued when worker disabled (requests not lost)
 - **Cloudflare Bypass**: Automatic bypass using cloudscraper25 with cookie injection
 - **User-Agent rotation**: 50+ realistic browser User-Agent strings
 - **SOCKS support**: HTTP, SOCKS4, and SOCKS5 proxies
@@ -265,9 +268,10 @@ The scraper uses these endpoints:
 - **Async/Await**: Uses `aiohttp` for concurrent HTTP requests
 - **Worker Pool**: Each proxy gets a dedicated worker with persistent session for maximum throughput
 - **Rate Limiting**: Automatic retry with exponential backoff for HTTP 429 errors
+- **Auto-Disable**: Workers disabled after consecutive failures, blocked proxies removed from file
 - **Natural Load Balancing**: Fast proxies handle more requests automatically
 - **Checkpoint System**: Saves progress after each model, resume anytime
-- **Detailed Statistics**: Shows success rate, request counts, worker pool stats
+- **Detailed Statistics**: Shows success rate, request counts, active/disabled workers
 
 See [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) for complete endpoint details.
 
@@ -361,6 +365,9 @@ Run scraper → Automatically skips Audi and Volkswagen (already complete), scra
 **Symptom**: "Blocked by Cloudflare (403)" or "Cloudflare challenge (503)" in logs
 
 **Solution**:
+- Workers auto-disable after 5 consecutive 403/503 errors (configurable via `PROXY_MAX_FAILURES`)
+- Blocked proxies are automatically removed from `proxies.txt`
+- In-flight requests are requeued to other workers (not lost)
 - Install the bypass module: `pip install cloudscraper25`
 - Test bypass: `python scripts/test_cloudflare_bypass.py`
 - The scraper automatically obtains and injects clearance cookies
