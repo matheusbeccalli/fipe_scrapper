@@ -669,7 +669,8 @@ async def verify_gaps(brands: List[BrandCoverage]) -> int:
     """
     Verify all detected gaps against the FIPE API.
 
-    Removes gaps from missing_months if the API confirms no data exists.
+    Uses ProxyWorkerPool for parallel verification if proxies are available,
+    otherwise falls back to sequential direct requests.
 
     Args:
         brands: List of BrandCoverage objects with detected gaps
@@ -693,70 +694,65 @@ async def verify_gaps(brands: List[BrandCoverage]) -> int:
     print(f"Verifying {total_gaps:,} gap(s) against FIPE API...")
     print("This may take a while. Press Ctrl+C to cancel.\n")
 
+    # Try to create worker pool for parallel verification
+    worker_pool, cloudflare_bypass = create_worker_pool()
+    use_parallel = worker_pool is not None
+
+    if use_parallel:
+        print("Using parallel verification with proxy worker pool\n")
+    else:
+        print("Using sequential verification (no proxies available)\n")
+
     total_filtered = 0
-    verified = 0
 
-    async with aiohttp.ClientSession() as session:
-        # First, fetch reference months to map dates to codes
-        print("Fetching reference months from API...")
-        date_to_code = await fetch_reference_months(session)
+    try:
+        # Start worker pool and cloudflare bypass if available
+        if use_parallel:
+            if cloudflare_bypass:
+                await cloudflare_bypass.start()
+            await worker_pool.start()
 
-        if not date_to_code:
-            print("ERROR: Could not fetch reference months. Skipping verification.")
-            return 0
+        async with aiohttp.ClientSession() as session:
+            # First, fetch reference months to map dates to codes
+            print("Fetching reference months from API...")
+            date_to_code = await fetch_reference_months(session)
 
-        print(f"Found {len(date_to_code)} reference months in API.\n")
+            if not date_to_code:
+                print("ERROR: Could not fetch reference months. Skipping verification.")
+                return 0
 
-        # Iterate through all model years with gaps
-        for brand in brands:
-            for model in brand.models:
-                for my in model.model_years:
-                    if not my.missing_months:
-                        continue
+            print(f"Found {len(date_to_code)} reference months in API.\n")
 
-                    verified_missing = []
-                    filtered_this_year = 0
+            if use_parallel:
+                # Parallel verification using worker pool
+                total_filtered = await _verify_gaps_parallel(
+                    brands, date_to_code, worker_pool, total_gaps
+                )
+            else:
+                # Sequential verification (original behavior)
+                total_filtered = await _verify_gaps_sequential(
+                    brands, date_to_code, session, total_gaps
+                )
 
-                    for gap_date in my.missing_months:
-                        verified += 1
+    finally:
+        # Stop worker pool and cloudflare bypass
+        if worker_pool:
+            await worker_pool.stop()
+        if cloudflare_bypass:
+            await cloudflare_bypass.stop()
 
-                        # Get month code from date
-                        month_code = date_to_code.get(gap_date)
-                        if month_code is None:
-                            # Date not in reference months = not a real gap
-                            filtered_this_year += 1
-                            continue
-
-                        # Check if price exists on API
-                        exists = await check_price_exists(
-                            session,
-                            month_code,
-                            my.brand_code,
-                            my.model_code,
-                            my.year_code
-                        )
-
-                        if exists:
-                            # True gap - data exists but we don't have it
-                            verified_missing.append(gap_date)
-                        else:
-                            # Not a real gap - data doesn't exist on FIPE
-                            filtered_this_year += 1
-
-                        # Progress update
-                        if verified % 10 == 0:
-                            print(f"  Progress: {verified}/{total_gaps} verified, "
-                                  f"{total_filtered + filtered_this_year} filtered")
-
-                    # Update missing months to only include verified gaps
-                    my.missing_months = verified_missing
-                    my.filtered_count = filtered_this_year
-                    total_filtered += filtered_this_year
+    # Calculate final stats
+    remaining_gaps = sum(
+        len(my.missing_months)
+        for b in brands
+        for m in b.models
+        for my in m.model_years
+    )
 
     print(f"\nVerification complete:")
     print(f"  Total gaps checked: {total_gaps:,}")
     print(f"  Filtered out (no data on FIPE): {total_filtered:,}")
-    print(f"  Verified true gaps: {total_gaps - total_filtered:,}")
+    print(f"  Verified true gaps: {remaining_gaps:,}")
 
     return total_filtered
 
