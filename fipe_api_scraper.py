@@ -732,11 +732,6 @@ class FIPEAPIScraper:
 
                     # Process each brand
                     for brand_idx, brand in enumerate(brands):
-                        # Check if brand already has data for THIS specific month
-                        if self._brand_has_data_for_month(brand['Value'], month_code):
-                            logger.info(f"Skipping brand {brand_idx + 1}/{len(brands)}: {brand['Label']} (already has data for this month)")
-                            continue
-
                         logger.info(f"Processing brand {brand_idx + 1}/{len(brands)}: {brand['Label']}")
 
                         # Get all models for this brand
