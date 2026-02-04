@@ -88,7 +88,6 @@ The schema uses foreign keys and unique constraints to prevent duplicates and ma
 - `get_price()`: Fetches price data for a specific configuration
 - `scrape_all_data()`: Main entry point with concurrent scraping
 - `_flush_database_batch()`: Bulk database saves for performance
-- `_brand_has_data_for_month()`: Smart skip logic to avoid re-scraping existing data
 
 **database_models.py** (SQLAlchemy ORM models)
 - Defines all 5 database tables using declarative_base
@@ -174,7 +173,7 @@ The scraper uses the official FIPE REST API at `http://veiculos.fipe.org.br/api/
 - Concurrency scales automatically with proxy count (250 proxies = 250 concurrent requests)
 - Automatic retry with exponential backoff on 429 (rate limit) and 520 (server overload) errors
 - Batch database commits (100 records per commit) for optimal performance
-- Smart skip: automatically skips brands that already have data for specified months
+- Smart skip: automatically skips already-scraped models via checkpoint system
 - Falls back to direct (non-proxy) requests if worker pool unavailable
 
 **Cloudflare Bypass**
@@ -219,11 +218,12 @@ By default, the scraper processes ALL available brands. To limit scraping to spe
 - Or query your database: `SELECT brand_code, brand_name FROM brands;`
 
 **Smart Skip Behavior**:
-- If a brand already has complete data for the specified date range, it will be automatically skipped
-- This allows you to run the scraper with different brand selections without re-scraping existing data
+- The scraper uses a checkpoint system (`scraping_checkpoint.json`) to skip already-scraped models at the individual model level
+- Brands are always processed (model list fetched), but models already in the checkpoint are skipped instantly
+- This allows the scraper to detect and fill gaps at the model level within any brand
 - Example workflow:
   1. First run: `BRAND_FILTER_CODES=6,59` (scrape Audi and Volkswagen for Jan-Dec 2024)
-  2. Second run: Remove filter or specify all brands (scraper will skip Audi/Volkswagen, scrape everything else)
+  2. Second run: Same brands — only models missing from checkpoint are re-scraped
 
 **Use Cases**:
 - Prioritize specific brands: Scrape your most important brands first, then fill in the rest later

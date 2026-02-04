@@ -179,58 +179,6 @@ class FIPEAPIScraper:
         except FileNotFoundError:
             return {}
 
-    def _brand_has_data_for_month(self, brand_code: str, month_code: str) -> bool:
-        """
-        Check if a brand already has price data for a specific month.
-
-        Args:
-            brand_code: FIPE brand code to check
-            month_code: Month code to check for
-
-        Returns:
-            True if brand has data for the specified month, False otherwise
-        """
-        db_session = self.SessionMaker()
-
-        try:
-            # Get the brand from database
-            brand = db_session.query(Brand).filter(Brand.brand_code == brand_code).first()
-
-            if not brand:
-                logger.debug(f"Brand {brand_code} not found in database")
-                return False
-
-            # Get the reference month from database
-            target_month = db_session.query(ReferenceMonth).filter(
-                ReferenceMonth.month_code == month_code
-            ).first()
-
-            if not target_month:
-                logger.debug(f"Month {month_code} not found in database")
-                return False
-
-            # Check if this brand has any price data for this specific month
-            price_count = db_session.query(CarPrice).join(
-                ModelYear
-            ).join(
-                CarModel
-            ).filter(
-                CarModel.brand_id == brand.id,
-                CarPrice.reference_month_id == target_month.id
-            ).count()
-
-            if price_count > 0:
-                logger.info(f"Brand {brand_code} already has {price_count} price records for month {month_code}")
-                return True
-
-            return False
-
-        except Exception as e:
-            logger.error(f"Error checking brand data: {e}")
-            return False
-        finally:
-            db_session.close()
-
     def _save_checkpoint(self, checkpoint_data: Dict):
         """Save scraping progress to checkpoint file."""
         if config.RESUME_CONFIG['enable_resume']:
@@ -718,7 +666,6 @@ class FIPEAPIScraper:
                 # Process each month
                 for month_idx, month in enumerate(months):
                     logger.info(f"Processing month {month_idx + 1}/{len(months)}: {month['Mes']}")
-                    month_code = str(month['Codigo'])
 
                     # Get all brands
                     brands = await self.get_brands(session, month['Codigo'])
