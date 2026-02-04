@@ -41,6 +41,58 @@ API_HEADERS = {
 API_REQUEST_DELAY = 0.5  # 500ms between requests
 
 
+def create_worker_pool() -> tuple:
+    """
+    Create a ProxyWorkerPool if proxies are available.
+
+    Returns:
+        Tuple of (worker_pool, cloudflare_bypass) or (None, None) if no proxies.
+    """
+    if not config.PROXY_CONFIG.get('enabled', True):
+        print("Proxy rotation disabled in config, using direct connections")
+        return None, None
+
+    proxy_file = config.PROXY_CONFIG.get('proxy_file', 'proxies.txt')
+
+    # Load proxies using ProxyPool
+    temp_pool = ProxyPool(
+        max_consecutive_failures=config.PROXY_CONFIG.get('max_consecutive_failures', 5)
+    )
+    proxy_count = temp_pool.load_proxies(proxy_file)
+
+    if proxy_count == 0:
+        print("No proxies loaded, using direct connections")
+        return None, None
+
+    # Create CloudflareBypass if available
+    cloudflare_bypass = None
+    if CLOUDSCRAPER_AVAILABLE:
+        cloudflare_bypass = CloudflareBypass(
+            target_url=API_BASE_URL,
+            proxies=temp_pool.proxies[:5],
+            refresh_interval=240.0,
+            max_sessions=3,
+        )
+        print("CloudflareBypass configured")
+
+    # Create worker pool
+    max_concurrent = config.PROXY_CONFIG.get('max_concurrent_connections', 0)
+    worker_pool = ProxyWorkerPool(
+        proxies=temp_pool.proxies,
+        api_base_url=API_BASE_URL,
+        max_retries=3,
+        cloudflare_bypass=cloudflare_bypass,
+        max_workers=max_concurrent,
+        max_consecutive_failures=config.PROXY_CONFIG.get('max_consecutive_failures', 5),
+        proxy_file=proxy_file,
+    )
+
+    effective_workers = min(proxy_count, max_concurrent) if max_concurrent > 0 else proxy_count
+    print(f"Worker pool configured with {effective_workers} workers (from {proxy_count} proxies)")
+
+    return worker_pool, cloudflare_bypass
+
+
 def generate_month_range(start_date: date, end_date: date) -> Set[date]:
     """Generate all months between start and end (inclusive)."""
     months = set()
