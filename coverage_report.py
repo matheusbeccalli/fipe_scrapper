@@ -757,6 +757,64 @@ async def verify_gaps(brands: List[BrandCoverage]) -> int:
     return total_filtered
 
 
+async def _verify_gaps_sequential(
+    brands: List[BrandCoverage],
+    date_to_code: Dict[date, int],
+    session: aiohttp.ClientSession,
+    total_gaps: int,
+) -> int:
+    """
+    Verify gaps sequentially using direct API requests.
+
+    This is the original verification logic, used when no proxies are available.
+    """
+    total_filtered = 0
+    verified = 0
+
+    for brand in brands:
+        for model in brand.models:
+            for my in model.model_years:
+                if not my.missing_months:
+                    continue
+
+                verified_missing = []
+                filtered_this_year = 0
+
+                for gap_date in my.missing_months:
+                    verified += 1
+
+                    # Get month code from date
+                    month_code = date_to_code.get(gap_date)
+                    if month_code is None:
+                        filtered_this_year += 1
+                        continue
+
+                    # Check if price exists on API
+                    exists = await check_price_exists(
+                        session,
+                        month_code,
+                        my.brand_code,
+                        my.model_code,
+                        my.year_code
+                    )
+
+                    if exists:
+                        verified_missing.append(gap_date)
+                    else:
+                        filtered_this_year += 1
+
+                    # Progress update
+                    if verified % 10 == 0:
+                        print(f"  Progress: {verified}/{total_gaps} verified, "
+                              f"{total_filtered + filtered_this_year} filtered")
+
+                my.missing_months = verified_missing
+                my.filtered_count = filtered_this_year
+                total_filtered += filtered_this_year
+
+    return total_filtered
+
+
 def generate_html_report(brands: List[BrandCoverage], output_path: str, verified: bool = False, filtered_count: int = 0) -> None:
     """Generate the HTML coverage report."""
 
