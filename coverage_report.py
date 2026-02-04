@@ -23,6 +23,8 @@ from dateutil.relativedelta import relativedelta
 from typing import Dict, List, Set, Optional
 from dataclasses import dataclass, field
 import config
+from proxy_manager import ProxyPool, ProxyWorkerPool
+from cloudflare_bypass import CloudflareBypass, CLOUDSCRAPER_AVAILABLE
 
 
 # API Configuration (matching fipe_api_scraper.py)
