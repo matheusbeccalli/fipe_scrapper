@@ -753,13 +753,23 @@ class FIPEAPIScraper:
 
                         # Save checkpoint ONLY for models where prices were actually collected
                         # This prevents marking models as "done" when no data was saved
+                        new_prices = 0
                         for model, prices_collected in zip(models, results):
                             if prices_collected > 0:
                                 checkpoint_key = f"{month['Codigo']}_{brand['Value']}_{model['Value']}"
                                 self.checkpoint[checkpoint_key] = True
+                                new_prices += prices_collected
                         self._save_checkpoint(self.checkpoint)
 
-                        logger.success(f"✓✓ Completed brand: {brand['Label']}")
+                        skipped_models = sum(1 for r in results if r == 0)
+                        scraped_models = len(results) - skipped_models
+                        if new_prices > 0:
+                            logger.success(f"Completed brand: {brand['Label']} "
+                                           f"({scraped_models} scraped, {skipped_models} skipped, "
+                                           f"{new_prices} new prices)")
+                        else:
+                            logger.info(f"Brand already complete: {brand['Label']} "
+                                        f"({skipped_models} models skipped via checkpoint)")
 
                     logger.success(f"✓✓✓ Completed month: {month['Mes']}")
 
