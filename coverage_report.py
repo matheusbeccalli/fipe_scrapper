@@ -617,6 +617,54 @@ async def check_price_exists(
     return False
 
 
+async def check_price_exists_via_pool(
+    worker_pool: ProxyWorkerPool,
+    month_code: int,
+    brand_code: str,
+    model_code: str,
+    year_code: str,
+) -> bool:
+    """
+    Check if a price exists using the worker pool for parallel processing.
+
+    Args:
+        worker_pool: ProxyWorkerPool instance
+        month_code: Reference month code from API
+        brand_code: Brand code
+        model_code: Model code
+        year_code: Year code (e.g., "2020-1")
+
+    Returns:
+        True if price data exists, False otherwise
+    """
+    # Parse year_code into year and fuel type
+    parts = year_code.split('-')
+    if len(parts) == 2:
+        year = parts[0]
+        fuel_code = parts[1]
+    else:
+        year = year_code
+        fuel_code = '1'
+
+    data = {
+        'codigoTabelaReferencia': month_code,
+        'codigoTipoVeiculo': VEHICLE_TYPE_CAR,
+        'codigoMarca': brand_code,
+        'codigoModelo': model_code,
+        'anoModelo': year,
+        'codigoTipoCombustivel': fuel_code,
+        'tipoConsulta': 'tradicional'
+    }
+
+    try:
+        result = await worker_pool.submit('/ConsultarValorComTodosParametros', data)
+        if result and isinstance(result, dict) and 'Valor' in result:
+            return True
+        return False
+    except Exception:
+        return False
+
+
 async def verify_gaps(brands: List[BrandCoverage]) -> int:
     """
     Verify all detected gaps against the FIPE API.
