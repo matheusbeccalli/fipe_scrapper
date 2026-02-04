@@ -167,6 +167,8 @@ The scraper uses the official FIPE REST API at `http://veiculos.fipe.org.br/api/
 - Format: `{month_code}_{brand_code}_{model_code}: true`
 - Can be disabled in `config.py` via `RESUME_CONFIG['enable_resume']`
 - Allows resuming after interruptions without re-scraping completed data
+- Skip logic operates at the **model level**: brands are always processed (model list fetched), but individual models already in the checkpoint are skipped instantly
+- This enables gap-filling: if a brand has partial data, only the missing models are scraped
 
 **Rate Limiting & Performance**
 - **Worker Pool Architecture**: Each proxy gets its own worker with persistent session

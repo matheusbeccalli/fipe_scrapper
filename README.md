@@ -270,7 +270,7 @@ The scraper uses these endpoints:
 - **Rate Limiting**: Automatic retry with exponential backoff for HTTP 429 errors
 - **Auto-Disable**: Workers disabled after consecutive failures, blocked proxies removed from file
 - **Natural Load Balancing**: Fast proxies handle more requests automatically
-- **Checkpoint System**: Saves progress after each model, resume anytime
+- **Checkpoint System**: Saves progress at the model level, enabling resume and gap-filling
 - **Detailed Statistics**: Shows success rate, request counts, active/disabled workers
 
 See [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) for complete endpoint details.
@@ -294,9 +294,10 @@ The FIPE API implements rate limiting (HTTP 429 errors). The scraper handles thi
 ## 🔄 Resuming Interrupted Scrapes
 
 If the scraper is interrupted:
-1. It automatically saves progress to `scraping_checkpoint.json`
-2. When restarted, it will skip already-scraped data
-3. You can disable this in `config.py`:
+1. It automatically saves progress to `scraping_checkpoint.json` at the model level
+2. When restarted, it fetches model lists for each brand but skips individual models that are already in the checkpoint
+3. This means partially-scraped brands will resume from where they left off, not re-scrape from scratch
+4. You can disable this in `config.py`:
 
 ```python
 RESUME_CONFIG = {
@@ -304,9 +305,9 @@ RESUME_CONFIG = {
 }
 ```
 
-## 🎯 Brand Filtering (Smart Skip Feature)
+## 🎯 Brand Filtering & Checkpoint-Based Skipping
 
-The scraper can now filter by specific brands and automatically skip brands that already have complete data:
+The scraper supports brand filtering and uses a checkpoint system to skip already-scraped models at the individual model level:
 
 ### How It Works
 
@@ -316,7 +317,7 @@ BRAND_FILTER_ENABLED=true
 BRAND_FILTER_CODES=6,59  # Audi and Volkswagen
 ```
 
-2. **Smart skip behavior**: If you later change the filter or remove it entirely, the scraper will automatically skip brands that already have complete data for your specified date range.
+2. **Checkpoint-based skip**: The scraper always fetches the model list for each brand (one API call), then checks the checkpoint file (`scraping_checkpoint.json`) for each model. Models already in the checkpoint are skipped instantly; only missing models are scraped. This enables gap-filling at the model level.
 
 ### Example Workflow
 
@@ -332,19 +333,20 @@ BRAND_FILTER_CODES=6,59  # Audi (6) and Volkswagen (59) - see docs/BRAND_CODES.m
 ```
 Run scraper → Gets all Audi and Volkswagen data for 2024
 
-**Step 2** - Scrape remaining brands:
+**Step 2** - Re-run or expand:
 ```bash
 # In .env
 SCRAPE_START_DATE=2024-01
 SCRAPE_END_DATE=2024-12
 BRAND_FILTER_ENABLED=false  # Or remove the filter
 ```
-Run scraper → Automatically skips Audi and Volkswagen (already complete), scrapes all other brands
+Run scraper → For Audi and Volkswagen, fetches model lists but skips all models via checkpoint. Scrapes all other brands normally.
 
 ### Benefits
 
 - **Prioritize important brands**: Get data for your most important brands first
-- **No duplicate scraping**: Smart detection prevents re-scraping existing data
+- **Model-level gap filling**: If a brand has partial data, only missing models are scraped
+- **No duplicate scraping**: Checkpoint system prevents re-scraping at the individual model level
 - **Flexible workflow**: Can scrape brands in any order or combination
 - **Faster testing**: Test with a single brand before running full scrape
 
