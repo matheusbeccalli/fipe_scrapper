@@ -815,6 +815,95 @@ async def _verify_gaps_sequential(
     return total_filtered
 
 
+async def _verify_gaps_parallel(
+    brands: List[BrandCoverage],
+    date_to_code: Dict[date, int],
+    worker_pool: ProxyWorkerPool,
+    total_gaps: int,
+) -> int:
+    """
+    Verify gaps in parallel using the proxy worker pool.
+
+    Submits all verification requests concurrently for maximum throughput.
+    """
+    # Build list of all verification tasks
+    tasks = []
+    task_metadata = []  # Track which model_year and gap_date each task corresponds to
+
+    for brand in brands:
+        for model in brand.models:
+            for my in model.model_years:
+                if not my.missing_months:
+                    continue
+
+                for gap_date in my.missing_months:
+                    month_code = date_to_code.get(gap_date)
+                    if month_code is None:
+                        # Not in reference months - mark for filtering
+                        task_metadata.append((my, gap_date, None, True))
+                        continue
+
+                    # Create verification task
+                    task = check_price_exists_via_pool(
+                        worker_pool,
+                        month_code,
+                        my.brand_code,
+                        my.model_code,
+                        my.year_code
+                    )
+                    tasks.append(task)
+                    task_metadata.append((my, gap_date, len(tasks) - 1, False))
+
+    # Execute all tasks concurrently
+    print(f"Submitting {len(tasks)} verification requests to worker pool...")
+
+    # Process in batches to show progress
+    batch_size = 100
+    results = []
+
+    for i in range(0, len(tasks), batch_size):
+        batch = tasks[i:i + batch_size]
+        batch_results = await asyncio.gather(*batch, return_exceptions=True)
+        results.extend(batch_results)
+
+        completed = min(i + batch_size, len(tasks))
+        print(f"  Progress: {completed}/{len(tasks)} requests completed")
+
+    # Process results and update model years
+    total_filtered = 0
+    model_year_results: Dict[int, tuple] = {}  # model_year_id -> (verified_missing, filtered_count)
+
+    for my, gap_date, task_idx, is_pre_filtered in task_metadata:
+        my_id = my.model_year_id
+
+        if my_id not in model_year_results:
+            model_year_results[my_id] = ([], 0, my)
+
+        verified_missing, filtered_count, _ = model_year_results[my_id]
+
+        if is_pre_filtered:
+            # No month code - filtered out
+            model_year_results[my_id] = (verified_missing, filtered_count + 1, my)
+        else:
+            # Check task result
+            result = results[task_idx]
+            if isinstance(result, Exception) or not result:
+                # Error or no data on FIPE - filtered out
+                model_year_results[my_id] = (verified_missing, filtered_count + 1, my)
+            else:
+                # Data exists - true gap
+                verified_missing.append(gap_date)
+                model_year_results[my_id] = (verified_missing, filtered_count, my)
+
+    # Apply results to model years
+    for my_id, (verified_missing, filtered_count, my) in model_year_results.items():
+        my.missing_months = verified_missing
+        my.filtered_count = filtered_count
+        total_filtered += filtered_count
+
+    return total_filtered
+
+
 def generate_html_report(brands: List[BrandCoverage], output_path: str, verified: bool = False, filtered_count: int = 0) -> None:
     """Generate the HTML coverage report."""
 
