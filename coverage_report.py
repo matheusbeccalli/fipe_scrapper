@@ -819,7 +819,7 @@ async def _verify_gaps_parallel(
     brands: List[BrandCoverage],
     date_to_code: Dict[date, int],
     worker_pool: ProxyWorkerPool,
-    total_gaps: int,
+    _total_gaps: int,  # unused, kept for signature consistency
 ) -> int:
     """
     Verify gaps in parallel using the proxy worker pool.
