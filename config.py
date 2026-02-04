@@ -86,4 +86,5 @@ PROXY_CONFIG = {
     'enabled': os.getenv('PROXY_ENABLED', 'true').lower() == 'true',
     'proxy_file': os.getenv('PROXY_FILE', 'proxies.txt'),
     'max_consecutive_failures': int(os.getenv('PROXY_MAX_FAILURES', '5')),
+    'max_concurrent_connections': int(os.getenv('MAX_CONCURRENT_CONNECTIONS', '250')),
 }
