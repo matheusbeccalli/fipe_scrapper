@@ -1,5 +1,5 @@
 aiohappyeyeballs==2.6.1
-aiohttp==3.13.0
+aiohttp==3.13.3
 aiohttp-socks==0.10.1
 aiosignal==1.4.0
 attrs==25.4.0
@@ -36,7 +36,7 @@ trio==0.31.0
 trio-websocket==0.12.2
 typing_extensions==4.15.0
 tzdata==2025.2
-urllib3==2.5.0
+urllib3==2.6.3
 webdriver-manager==4.0.2
 websocket-client==1.9.0
 win32_setctime==1.2.0
